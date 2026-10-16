@@ -29,6 +29,7 @@ import {
 import { cyberSound } from '../services/soundEffects';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import { adminHeaders } from '../services/adminAuth';
 
 interface AdminCandidateStudioProps {
   candidates: Candidate[];
@@ -66,7 +67,7 @@ export const AdminCandidateStudio: React.FC<AdminCandidateStudioProps> = ({
     try {
       const res = await fetch('/api/admin/config', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...adminHeaders() },
         body: JSON.stringify({
           title: electionTitle.trim(),
           subtitle: electionSubtitle.trim(),
@@ -92,7 +93,7 @@ export const AdminCandidateStudio: React.FC<AdminCandidateStudioProps> = ({
     try {
       await fetch('/api/admin/config', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...adminHeaders() },
         body: JSON.stringify({ isBallotLocked: newLockState }),
       });
       if (newLockState) cyberSound.playAccessGranted();
@@ -105,7 +106,7 @@ export const AdminCandidateStudio: React.FC<AdminCandidateStudioProps> = ({
   const handleSaveCandidate = async (candidateData: Partial<Candidate>) => {
     const res = await fetch('/api/admin/candidates', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...adminHeaders() },
       body: JSON.stringify(candidateData),
     });
 
@@ -130,6 +131,7 @@ export const AdminCandidateStudio: React.FC<AdminCandidateStudioProps> = ({
     try {
       const res = await fetch(`/api/admin/candidates/${id}`, {
         method: 'DELETE',
+        headers: { ...adminHeaders() },
       });
       if (res.ok) {
         cyberSound.playAccessGranted();
@@ -158,7 +160,7 @@ export const AdminCandidateStudio: React.FC<AdminCandidateStudioProps> = ({
     try {
       await fetch('/api/admin/candidates/reorder', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...adminHeaders() },
         body: JSON.stringify({ candidateIds }),
       });
       onRefresh();

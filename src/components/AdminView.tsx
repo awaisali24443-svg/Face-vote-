@@ -26,6 +26,7 @@ import { EnrollmentView } from './EnrollmentView';
 import { cyberSound } from '../services/soundEffects';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import { adminHeaders, setAdminPin, clearAdminPin } from '../services/adminAuth';
 
 export type AdminTab = 'enrollment' | 'approvals' | 'candidates' | 'audit';
 
@@ -56,7 +57,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ initialSubTab = 'enrollmen
   const fetchStats = async () => {
     try {
       setError(null);
-      const res = await fetch('/api/admin/stats');
+      const res = await fetch('/api/admin/stats', { headers: { ...adminHeaders() } });
       if (!res.ok) throw new Error('Failed to load admin stats');
       const data = await res.json();
       setStats(data);
@@ -72,10 +73,11 @@ export const AdminView: React.FC<AdminViewProps> = ({ initialSubTab = 'enrollmen
   };
 
   useEffect(() => {
+    if (isLocked) return; // stats are officer-only; don't poll while locked
     fetchStats();
     const interval = setInterval(fetchStats, 4000);
     return () => clearInterval(interval);
-  }, []);
+  }, [isLocked]);
 
   const handleUpdateThreshold = async (newVal: number) => {
     cyberSound.playClick();
@@ -83,7 +85,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ initialSubTab = 'enrollmen
     try {
       const res = await fetch('/api/admin/threshold', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...adminHeaders() },
         body: JSON.stringify({ threshold: newVal }),
       });
       if (res.ok) {
@@ -111,7 +113,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ initialSubTab = 'enrollmen
     try {
       const res = await fetch('/api/admin/reset', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...adminHeaders() },
         body: JSON.stringify({ clearAll }),
       });
       if (!res.ok) throw new Error('Failed to reset');
@@ -125,15 +127,26 @@ export const AdminView: React.FC<AdminViewProps> = ({ initialSubTab = 'enrollmen
     }
   };
 
-  const handleUnlockWithPin = (e: React.FormEvent) => {
+  const handleUnlockWithPin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const requiredPin = stats?.config?.adminPin || '2026';
-    if (enteredPin.trim() === requiredPin || enteredPin.trim() === '1234') {
-      cyberSound.playAccessGranted();
-      setIsLocked(false);
-      setPinError(false);
-      setEnteredPin('');
-    } else {
+    const pin = enteredPin.trim();
+    try {
+      const res = await fetch('/api/admin/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin }),
+      });
+      if (res.ok) {
+        setAdminPin(pin);
+        cyberSound.playAccessGranted();
+        setIsLocked(false);
+        setPinError(false);
+        setEnteredPin('');
+      } else {
+        cyberSound.playSecurityAlarm();
+        setPinError(true);
+      }
+    } catch {
       cyberSound.playSecurityAlarm();
       setPinError(true);
     }
@@ -178,14 +191,14 @@ export const AdminView: React.FC<AdminViewProps> = ({ initialSubTab = 'enrollmen
               <div className="relative">
                 <input
                   type="password"
-                  maxLength={6}
+                  maxLength={12}
                   value={enteredPin}
                   onChange={(e) => {
                     setEnteredPin(e.target.value);
                     setPinError(false);
                   }}
                   autoFocus
-                  placeholder={isUrdu ? 'آفیسر پن درج کریں (2026)' : 'Enter Officer PIN (2026)'}
+                  placeholder={isUrdu ? 'آفیسر پن درج کریں' : 'Enter Officer PIN'}
                   className={`w-full text-center tracking-widest text-lg font-black px-4 py-3.5 rounded-xl border focus:outline-none transition ${
                     isLight
                       ? 'bg-slate-50 border-slate-300 text-slate-900 focus:bg-white focus:border-emerald-600 shadow-sm'
@@ -196,7 +209,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ initialSubTab = 'enrollmen
 
               {pinError && (
                 <div className="text-xs text-rose-500 mt-2 font-bold">
-                  {isUrdu ? 'رسائی مسترد: غلط پن کوڈ۔ مجاز پن 2026 ہے۔' : 'ACCESS DENIED: Invalid Official PIN. Standard Officer PIN is 2026.'}
+                  {isUrdu ? 'رسائی مسترد: غلط پن کوڈ۔' : 'ACCESS DENIED: Invalid Official PIN.'}
                 </div>
               )}
             </div>
@@ -266,6 +279,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ initialSubTab = 'enrollmen
           <button
             onClick={() => {
               cyberSound.playClick();
+              clearAdminPin();
               setIsLocked(true);
             }}
             title="Lock admin panel"
@@ -427,7 +441,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ initialSubTab = 'enrollmen
           voters={stats?.votersList || []}
           config={stats?.config || null}
           onRefresh={fetchStats}
-          onInspectEmbedding={(voter) => setInspectedVoter({ name: voter.name })}
+          onInspectEmbedding={(voter) => setInspectedVoter({ name: voter.name, embedding: voter.embedding })}
         />
       )}
 
@@ -711,8 +725,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ initialSubTab = 'enrollmen
       <VectorMatrixVisualizer
         isOpen={!!inspectedVoter}
         onClose={() => setInspectedVoter(null)}
-        embedding={null}
-        score={0.97}
+        embedding={inspectedVoter?.embedding || null}
         threshold={thresholdInput}
         voterName={inspectedVoter?.name}
       />

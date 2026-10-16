@@ -17,6 +17,7 @@ export default function App() {
   const [currentTab, setCurrentTab] = useState<'checkin' | 'results' | 'admin'>('checkin');
   const [adminSubTab, setAdminSubTab] = useState<AdminTab>('enrollment');
   const [activeBallotVoter, setActiveBallotVoter] = useState<Voter | null>(null);
+  const [ballotToken, setBallotToken] = useState<string | null>(null);
   const [modelsReady, setModelsReady] = useState<boolean>(false);
   const [threshold, setThreshold] = useState<number>(0.6);
   const [voteRecordedMessage, setVoteRecordedMessage] = useState<string | null>(null);
@@ -39,13 +40,15 @@ export default function App() {
   }, []);
 
   // Handler to enter the secret ballot screen after successful check-in
-  const handleProceedToBallot = (voter: Voter) => {
+  const handleProceedToBallot = (voter: Voter, token?: string | null) => {
     setActiveBallotVoter(voter);
+    setBallotToken(token || null);
   };
 
   // Handler when ballot is officially submitted
   const handleVoteComplete = (message: string) => {
     setActiveBallotVoter(null);
+    setBallotToken(null);
     setCurrentTab('checkin');
     setVoteRecordedMessage(message);
   };
@@ -53,6 +56,7 @@ export default function App() {
   // Cancel ballot
   const handleCancelBallot = () => {
     setActiveBallotVoter(null);
+    setBallotToken(null);
   };
 
   const handleOpenEnrollmentDesk = () => {
@@ -103,6 +107,7 @@ export default function App() {
         {activeBallotVoter ? (
           <BallotView
             voter={activeBallotVoter}
+            ballotToken={ballotToken}
             onVoteComplete={handleVoteComplete}
             onCancel={handleCancelBallot}
           />

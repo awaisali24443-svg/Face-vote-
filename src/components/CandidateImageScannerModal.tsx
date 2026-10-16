@@ -18,6 +18,7 @@ import { Candidate } from '../types';
 import { cyberSound } from '../services/soundEffects';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import { adminHeaders } from '../services/adminAuth';
 import {
   getLocalizedCandidateName,
   getLocalizedPartyName,
@@ -73,7 +74,7 @@ export const CandidateImageScannerModal: React.FC<CandidateImageScannerModalProp
     try {
       const response = await fetch('/api/admin/candidates/extract-from-image', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...adminHeaders() },
         body: JSON.stringify({
           imageBase64,
           mimeType: type,
