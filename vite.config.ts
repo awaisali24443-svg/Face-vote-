@@ -20,6 +20,10 @@ function expressApiPlugin(): Plugin {
 
 export default defineConfig(() => {
   return {
+    // Base path: '/' for the full server deployment (Render/local).
+    // GitHub Pages serves this repo under /Face-vote-/ — the Pages workflow
+    // builds with VITE_BASE=/Face-vote-/ so asset URLs resolve there.
+    base: process.env.VITE_BASE || '/',
     plugins: [
       react(),
       tailwindcss(),
