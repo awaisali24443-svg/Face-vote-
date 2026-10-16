@@ -1,0 +1,15 @@
+# Render deployment blueprint — FaceVote (Express + Vite, single web service)
+# Free plan notes: the service sleeps after ~15 min idle (wakes in ~1 min)
+# and its local disk is ephemeral, so the SQLite voter DB (data/) resets on
+# redeploys/restarts. Suitable for demos; use a persistent disk or an
+# external database for a real election.
+services:
+  - type: web
+    name: facevote
+    runtime: node
+    plan: free
+    buildCommand: npm install --include=dev && npm run build
+    startCommand: npm start
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
