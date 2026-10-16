@@ -42,6 +42,7 @@ import { cyberSound } from '../services/soundEffects';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { offlineStorage } from '../services/offlineStorage';
+import { adminHeaders } from '../services/adminAuth';
 
 interface EnrollmentViewProps {
   onGoToCheckIn: () => void;
@@ -120,7 +121,7 @@ export const EnrollmentView: React.FC<EnrollmentViewProps> = ({ onGoToCheckIn })
   // Load registered voters from backend
   const fetchRegisteredVoters = useCallback(async () => {
     try {
-      const res = await fetch('/api/voters');
+      const res = await fetch('/api/voters', { headers: { ...adminHeaders() } });
       if (res.ok) {
         const data = await res.json();
         const list = data.voters || [];
@@ -350,7 +351,7 @@ export const EnrollmentView: React.FC<EnrollmentViewProps> = ({ onGoToCheckIn })
       // 3. Send { name, cnic, embedding, photo, ...identity } to backend
       const response = await fetch('/api/voters/enroll', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...adminHeaders() },
         body: JSON.stringify({
           name: voterName.trim(),
           cnic: voterCnic.trim() || undefined,
@@ -409,6 +410,10 @@ export const EnrollmentView: React.FC<EnrollmentViewProps> = ({ onGoToCheckIn })
 
     try {
       const result = await extractDescriptorFromImageSource(imageSrc);
+      if (!result.faceDetected || !result.embedding || result.embedding.length !== 128) {
+        setErrorMessage('No face was detected in that image. Please choose a clear portrait photo.');
+        return;
+      }
       setUploadedImagePreview(result.photo);
       setUploadedDescriptor(result.embedding);
       setEnrolledEmbedding(result.embedding);
@@ -463,7 +468,7 @@ export const EnrollmentView: React.FC<EnrollmentViewProps> = ({ onGoToCheckIn })
     try {
       const response = await fetch('/api/voters/enroll', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...adminHeaders() },
         body: JSON.stringify({
           name: voterName.trim(),
           cnic: voterCnic.trim() || undefined,
@@ -515,109 +520,10 @@ export const EnrollmentView: React.FC<EnrollmentViewProps> = ({ onGoToCheckIn })
     }
   };
 
-  // Override duplicate check and force register anyway
-  const handleForceEnroll = async () => {
-    if (!duplicateConflict || !duplicateConflict.embedding) return;
-    cyberSound.playClick();
-    setIsCapturing(true);
-    setErrorMessage(null);
-
-    try {
-      const response = await fetch('/api/voters/enroll', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: voterName.trim(),
-          cnic: voterCnic.trim() || undefined,
-          father_name: fatherName.trim() || undefined,
-          gender,
-          dob: dob.trim() || undefined,
-          province,
-          district,
-          constituency,
-          polling_station: pollingStation,
-          electoral_block_code: electoralBlockCode,
-          family_tree_no: familyTreeNo,
-          nadra_verified: nadraVerified,
-          embedding: duplicateConflict.embedding,
-          photo: duplicateConflict.snapshot || uploadedPhoto,
-          forceEnroll: true,
-        }),
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to force enroll voter');
-      }
-
-      cyberSound.playAccessGranted();
-      setEnrolledVoter(data.voter);
-      setDuplicateConflict(null);
-      fetchRegisteredVoters();
-      setIsCapturing(false);
-    } catch (err: any) {
-      console.error('Force enrollment error:', err);
-      cyberSound.playSecurityAlarm();
-      setErrorMessage(err.message || 'Error completing force registration');
-      setIsCapturing(false);
-    }
-  };
-
-  // Delete previous conflicting voter and register this new voter
-  const handleDeleteConflictingAndEnroll = async () => {
-    if (!duplicateConflict) return;
-    cyberSound.playClick();
-    const existing = duplicateConflict.existingVoter;
-    if (
-      !window.confirm(
-        `Erase previous voter "${existing.name}" (ID #${existing.id}) and register "${voterName.trim()}" in their place?`
-      )
-    ) {
-      return;
-    }
-
-    setIsCapturing(true);
-    setErrorMessage(null);
-    try {
-      // 1. Delete conflicting voter
-      await fetch(`/api/voters/${existing.id}`, { method: 'DELETE' });
-
-      // 2. Enroll current new voter
-      const response = await fetch('/api/voters/enroll', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: voterName.trim(),
-          cnic: voterCnic.trim() || undefined,
-          father_name: fatherName.trim() || undefined,
-          gender,
-          dob: dob.trim() || undefined,
-          province,
-          district,
-          constituency,
-          polling_station: pollingStation,
-          electoral_block_code: electoralBlockCode,
-          family_tree_no: familyTreeNo,
-          nadra_verified: nadraVerified,
-          embedding: duplicateConflict.embedding,
-          photo: duplicateConflict.snapshot || uploadedPhoto,
-          forceEnroll: true,
-        }),
-      });
-
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to enroll new voter');
-
-      cyberSound.playAccessGranted();
-      setEnrolledVoter(data.voter);
-      setDuplicateConflict(null);
-      fetchRegisteredVoters();
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Error replacing voter');
-    } finally {
-      setIsCapturing(false);
-    }
-  };
+  // REMOVED: "force enroll" and "erase previous voter & enroll".
+  // Duplicate CNIC / face registrations are blocked server-side with no
+  // override. If a record is genuinely wrong, an officer deletes it from the
+  // registered voters list first, then enrolls — two separate, visible actions.
 
   // Delete an individual registered voter from the quick modal
   const handleDeleteRegisteredVoter = async (id: number, name: string) => {
@@ -625,7 +531,7 @@ export const EnrollmentView: React.FC<EnrollmentViewProps> = ({ onGoToCheckIn })
     if (!window.confirm(`Delete registered voter "${name}" (ID #${id})? Biometric signature will be wiped.`)) return;
     setIsDeletingVoter(id);
     try {
-      const res = await fetch(`/api/voters/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/voters/${id}`, { method: 'DELETE', headers: { ...adminHeaders() } });
       if (res.ok) {
         cyberSound.playClick();
         await fetchRegisteredVoters();
@@ -1489,26 +1395,13 @@ export const EnrollmentView: React.FC<EnrollmentViewProps> = ({ onGoToCheckIn })
                         </div>
                       </div>
 
-                      <div className="pt-2 flex flex-col gap-2">
-                        <button
-                          type="button"
-                          onClick={handleForceEnroll}
-                          disabled={isCapturing}
-                          className="w-full py-3 px-3 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wide transition shadow-lg cursor-pointer flex items-center justify-center space-x-1.5"
-                        >
-                          <UserPlus className="w-4 h-4 text-slate-950" />
-                          <span>REGISTER ANYWAY (CONFIRM DIFFERENT PERSON)</span>
-                        </button>
+                      <p className="text-[11px] text-amber-200/80 leading-relaxed pt-1">
+                        Duplicate registration is blocked and cannot be overridden here. If the
+                        existing record is genuinely wrong, delete it from the registered voters
+                        list first, then enroll again.
+                      </p>
 
-                        <button
-                          type="button"
-                          onClick={handleDeleteConflictingAndEnroll}
-                          disabled={isCapturing}
-                          className="w-full py-2.5 px-3 rounded-lg bg-rose-950/80 hover:bg-rose-900 border border-rose-600 text-rose-200 text-xs font-bold uppercase transition cursor-pointer flex items-center justify-center space-x-1.5"
-                        >
-                          <Trash2 className="w-3.5 h-3.5 text-rose-400" />
-                          <span>ERASE PREVIOUS VOTER &amp; ENROLL</span>
-                        </button>
+                      <div className="pt-2 flex flex-col gap-2">
 
                         <button
                           type="button"
@@ -1756,17 +1649,11 @@ export const EnrollmentView: React.FC<EnrollmentViewProps> = ({ onGoToCheckIn })
                         </div>
                       </div>
 
-                      <div className="pt-2 flex flex-col gap-2">
-                        <button
-                          type="button"
-                          onClick={handleForceEnroll}
-                          disabled={isCapturing}
-                          className="w-full py-2.5 px-3 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wide transition shadow cursor-pointer flex items-center justify-center space-x-1.5"
-                        >
-                          <UserPlus className="w-4 h-4 text-slate-950" />
-                          <span>REGISTER ANYWAY</span>
-                        </button>
-                      </div>
+                      <p className="text-[11px] text-amber-200/80 leading-relaxed pt-1">
+                        Duplicate registration is blocked and cannot be overridden here. If the
+                        existing record is genuinely wrong, delete it from the registered voters
+                        list first, then enroll again.
+                      </p>
                     </div>
                   )}
 
