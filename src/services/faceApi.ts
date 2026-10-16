@@ -572,41 +572,28 @@ export async function extractDescriptorFromImageSource(
           return;
         }
 
-        // Fallback embedding generation using deterministic pixel hash if face model missed extreme angle
-        const imgData = ctx?.getImageData(0, 0, canvas.width, canvas.height);
-        const syntheticEmbedding = new Array(128).fill(0);
-        if (imgData) {
-          const pixels = imgData.data;
-          for (let i = 0; i < pixels.length; i += 4) {
-            const idx = (i >> 2) % 128;
-            syntheticEmbedding[idx] += (pixels[i] * 0.299 + pixels[i + 1] * 0.587 + pixels[i + 2] * 0.114) / 255;
-          }
-        }
-        // Normalize vector to unit length
-        const norm = Math.sqrt(syntheticEmbedding.reduce((s, v) => s + v * v, 0)) || 1;
-        const normalized = syntheticEmbedding.map((v) => v / norm);
-
+        // No face was detected in this image. Report that honestly — the
+        // previous code fabricated a "biometric" embedding from raw pixel
+        // data and still reported faceDetected: true, letting non-faces be
+        // enrolled and later matched.
         resolve({
-          embedding: normalized,
+          embedding: [],
           photo: cleanPhoto,
-          faceDetected: true,
+          faceDetected: false,
         });
       } catch (err) {
         console.warn('Error processing image descriptor:', err);
-        // Fallback deterministic embedding
-        const fake = Array.from({ length: 128 }, (_, i) => Math.sin(i * 0.17) * 0.5);
         resolve({
-          embedding: fake,
+          embedding: [],
           photo: imageSource,
-          faceDetected: true,
+          faceDetected: false,
         });
       }
     };
 
     img.onerror = () => {
-      const fake = Array.from({ length: 128 }, (_, i) => Math.cos(i * 0.23) * 0.5);
       resolve({
-        embedding: fake,
+        embedding: [],
         photo: imageSource,
         faceDetected: false,
       });

@@ -1,5 +1,6 @@
 // Client-side Offline Storage and Biometric Matching Engine
 import { Voter, Candidate } from '../types';
+import { adminHeaders } from './adminAuth';
 
 const VOTERS_STORAGE_KEY = 'facevote_local_voters_v2';
 const CANDIDATES_STORAGE_KEY = 'facevote_local_candidates_v2';
@@ -211,6 +212,10 @@ class OfflineStorageService {
 
     try {
       const votes = this.getPendingOfflineVotes();
+      const existing = votes.find((v) => v.voterId === voterId);
+      if (existing) {
+        return existing; // one pending offline vote per voter — no duplicates
+      }
       votes.push(newVote);
       localStorage.setItem(OFFLINE_VOTES_KEY, JSON.stringify(votes));
       this.markVoterAsVotedLocally(voterId);
@@ -263,14 +268,11 @@ class OfflineStorageService {
         if (res.ok) {
           syncedCount++;
         } else {
-          // If already voted on server, consider it handled
-          const resData = await res.json().catch(() => ({}));
-          if (resData.error && resData.error.includes('already')) {
-            syncedCount++;
-          } else {
-            errors++;
-            remainingVotes.push(vote);
-          }
+          // Any server rejection (already voted, missing ballot token,
+          // not approved) keeps the vote in the pending queue and counts
+          // as an error for officer review — it is never silently dropped.
+          errors++;
+          remainingVotes.push(vote);
         }
       } catch {
         errors++;
@@ -291,7 +293,7 @@ class OfflineStorageService {
   public async syncRegistryFromServer(): Promise<boolean> {
     try {
       const [votersRes, candidatesRes] = await Promise.all([
-        fetch('/api/voters'),
+        fetch('/api/voters', { headers: { ...adminHeaders() } }),
         fetch('/api/candidates'),
       ]);
 
@@ -313,7 +315,7 @@ class OfflineStorageService {
 
       // Also sync any pending offline votes
       await this.syncPendingVotesToServer();
-      return true;
+      return votersRes.ok; // honest status: false when the registry could not be fetched
     } catch {
       return false;
     }

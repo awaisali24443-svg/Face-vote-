@@ -67,7 +67,7 @@ export interface ElectionConfig {
   subtitle: string;
   isBallotLocked: boolean;
   autoApprove: boolean;
-  adminPin: string;
+  adminPin?: string; // never sent by the server anymore; kept optional for legacy shapes
   threshold?: number;
 }
 
@@ -104,4 +104,5 @@ export interface MatchResult {
   similarity?: number;
   threshold?: number;
   reason?: string;
+  ballotToken?: string;
 }
