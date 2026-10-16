@@ -95,7 +95,7 @@ export const VectorMatrixVisualizer: React.FC<VectorMatrixVisualizerProps> = ({
             <div className={`text-xl font-black mt-0.5 ${
               isLight ? 'text-cyan-800' : 'text-cyan-300'
             }`}>
-              {score !== null && score !== undefined ? score.toFixed(4) : '0.2418'}
+              {score !== null && score !== undefined ? score.toFixed(4) : '—'}
             </div>
             <span className={`text-[9px] ${isLight ? 'text-slate-500' : 'text-slate-500'}`}>
               Threshold: &le; {threshold.toFixed(2)}

@@ -18,12 +18,14 @@ import { offlineStorage } from '../services/offlineStorage';
 
 interface BallotViewProps {
   voter: Voter;
+  ballotToken?: string | null;
   onVoteComplete: (message: string) => void;
   onCancel: () => void;
 }
 
 export const BallotView: React.FC<BallotViewProps> = ({
   voter,
+  ballotToken,
   onVoteComplete,
   onCancel,
 }) => {
@@ -34,6 +36,7 @@ export const BallotView: React.FC<BallotViewProps> = ({
   const [selectedChoice, setSelectedChoice] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [voteSuccess, setVoteSuccess] = useState<boolean>(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Load candidates from backend or local cache
   useEffect(() => {
@@ -96,6 +99,7 @@ export const BallotView: React.FC<BallotViewProps> = ({
     }
 
     setIsSubmitting(true);
+    setSubmitError(null);
 
     // Try online submission if connected
     if (navigator.onLine) {
@@ -106,6 +110,7 @@ export const BallotView: React.FC<BallotViewProps> = ({
           body: JSON.stringify({
             voterId: voter.id,
             candidateName: selectedChoice,
+            ballotToken: ballotToken || undefined,
           }),
         });
 
@@ -126,8 +131,21 @@ export const BallotView: React.FC<BallotViewProps> = ({
             return;
           }
         }
+
+        // The server answered and REJECTED this ballot (already voted, not
+        // approved, missing/expired check-in token, invalid choice). That is
+        // final: show the real error. Never record it offline and never show
+        // a fake success — the previous code did exactly that.
+        const errData = await response.json().catch(() => ({}));
+        setSubmitError(
+          errData.error ||
+            (isUrdu ? 'سرور نے ووٹ مسترد کر دیا۔' : 'The server rejected this ballot.')
+        );
+        cyberSound.playSecurityAlarm();
+        setIsSubmitting(false);
+        return;
       } catch (netErr) {
-        console.warn('Online submission failed, recording in offline audit ledger:', netErr);
+        console.warn('Network unreachable, recording in offline audit ledger:', netErr);
       }
     }
 
@@ -319,6 +337,12 @@ export const BallotView: React.FC<BallotViewProps> = ({
                   );
                 })}
               </div>
+            </div>
+          )}
+
+          {submitError && (
+            <div className="p-3.5 rounded-2xl bg-rose-500/10 border-2 border-rose-500 text-rose-600 dark:text-rose-300 text-sm font-bold text-center">
+              {submitError}
             </div>
           )}
 

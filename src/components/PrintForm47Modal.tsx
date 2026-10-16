@@ -20,10 +20,10 @@ export const PrintForm47Modal: React.FC<Form47Props> = ({
   onClose,
   candidates,
   totalVotes,
-  totalRegisteredVoters = 3450,
-  constituency = 'NA-127 (Lahore-XI)',
-  district = 'Lahore, Punjab',
-  pollingStationsCount = 142,
+  totalRegisteredVoters = 0,
+  constituency = '',
+  district = '',
+  pollingStationsCount = 0,
 }) => {
   if (!isOpen) return null;
 

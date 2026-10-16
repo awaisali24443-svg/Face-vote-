@@ -29,7 +29,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { offlineStorage } from '../services/offlineStorage';
 
 interface CheckInViewProps {
-  onProceedToBallot: (voter: Voter) => void;
+  onProceedToBallot: (voter: Voter, ballotToken?: string | null) => void;
   onGoToEnroll: () => void;
   lastVoteRecordedMessage?: string | null;
   onClearVoteMessage?: () => void;
@@ -92,6 +92,7 @@ export const CheckInView: React.FC<CheckInViewProps> = ({
 
   const [status, setStatus] = useState<CheckInStatus>('position_face');
   const [matchedVoter, setMatchedVoter] = useState<Voter | null>(null);
+  const [ballotToken, setBallotToken] = useState<string | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
 
   // Live face tracking states
@@ -242,7 +243,14 @@ export const CheckInView: React.FC<CheckInViewProps> = ({
               if (data.voter.has_voted) {
                 cyberSound.playSecurityAlarm();
                 setStatus('already_voted');
+              } else if (data.voter.approval_status === 'pending') {
+                cyberSound.playSecurityAlarm();
+                setStatus('pending_approval');
+              } else if (data.voter.approval_status === 'rejected') {
+                cyberSound.playSecurityAlarm();
+                setStatus('registration_rejected');
               } else {
+                setBallotToken(data.ballotToken || null);
                 cyberSound.playAccessGranted();
                 setStatus('match_found');
               }
@@ -261,7 +269,14 @@ export const CheckInView: React.FC<CheckInViewProps> = ({
         if (localResult.voter.has_voted) {
           cyberSound.playSecurityAlarm();
           setStatus('already_voted');
+        } else if (localResult.voter.approval_status === 'pending') {
+          cyberSound.playSecurityAlarm();
+          setStatus('pending_approval');
+        } else if (localResult.voter.approval_status === 'rejected') {
+          cyberSound.playSecurityAlarm();
+          setStatus('registration_rejected');
         } else {
+          setBallotToken(null);
           cyberSound.playAccessGranted();
           setStatus('match_found');
         }
@@ -281,6 +296,20 @@ export const CheckInView: React.FC<CheckInViewProps> = ({
   const handleVerify = useCallback(async () => {
     if (isLivenessActiveRef.current || !facePresent) return;
 
+    // Liveness gate: a live person must show a blink or natural micro-motion,
+    // and a static-spoof flag blocks verification outright. Previously the
+    // blink/motion analysis was displayed but never checked — a printed
+    // photo held still would verify.
+    const blinkSeen =
+      earHistoryRef.current.length >= 8 &&
+      checkBlinkInHistory(earHistoryRef.current, sensitivityRef.current).isBlink;
+    const motionOk = !!microMotion && microMotion.hasMotion && !microMotion.isStaticSpoof;
+    if (spoofWarning || (!blinkSeen && !motionOk)) {
+      cyberSound.playSecurityAlarm();
+      setStatus('liveness_failed');
+      return;
+    }
+
     setIsLivenessActive(true);
     setStatus('checking_liveness');
 
@@ -288,12 +317,13 @@ export const CheckInView: React.FC<CheckInViewProps> = ({
     setTimeout(() => {
       executeMatch();
     }, 900);
-  }, [facePresent, executeMatch]);
+  }, [facePresent, executeMatch, microMotion, spoofWarning]);
 
   // Reset State to Scan Again
   const handleReset = useCallback(() => {
     setStatus('position_face');
     setMatchedVoter(null);
+    setBallotToken(null);
     setIsLivenessActive(false);
     autoScanTriggeredRef.current = false;
     consecutiveFaceFramesRef.current = 0;
@@ -612,7 +642,7 @@ export const CheckInView: React.FC<CheckInViewProps> = ({
             <div className="mt-6 flex flex-col space-y-3">
               <button
                 id="proceed-to-ballot-btn"
-                onClick={() => onProceedToBallot(matchedVoter)}
+                onClick={() => onProceedToBallot(matchedVoter, ballotToken)}
                 className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-base sm:text-lg shadow-xl flex items-center justify-center space-x-2 transition cursor-pointer transform hover:scale-105 active:scale-95"
               >
                 <Vote className="w-6 h-6" />
@@ -707,6 +737,71 @@ export const CheckInView: React.FC<CheckInViewProps> = ({
                     : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
                 }`}
               >
+                {isUrdu ? 'دوبارہ کوشش کریں' : 'Try Again'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 4. PENDING APPROVAL MODAL */}
+      {status === 'pending_approval' && matchedVoter && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in">
+          <div className={`w-full max-w-md rounded-3xl p-6 sm:p-8 border-4 text-center shadow-2xl ${isLight ? 'bg-white border-amber-500 text-slate-900' : 'bg-slate-900 border-amber-500 text-white'}`}>
+            <h2 className="text-xl sm:text-2xl font-black font-display text-amber-600 dark:text-amber-400">
+              {isUrdu ? 'رجسٹریشن منظوری کے منتظر ہے' : 'Registration Pending Approval'}
+            </h2>
+            <div className="text-xl font-bold my-3">{matchedVoter.name}</div>
+            <p className="text-sm opacity-80">
+              {isUrdu
+                ? 'آپ کی رجسٹریشن ابھی افسر کی منظوری کے منتظر ہے۔ منظوری کے بعد ہی ووٹ ڈالا جا سکتا ہے۔'
+                : 'Your registration is still awaiting officer approval. Voting opens after approval.'}
+            </p>
+            <div className="mt-6">
+              <button onClick={handleBackToKiosk} className="w-full py-3.5 px-6 rounded-2xl bg-amber-600 hover:bg-amber-500 text-white font-black text-sm sm:text-base shadow-lg transition cursor-pointer">
+                {isUrdu ? 'واپس جائیں' : 'Back to Kiosk'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 5. REGISTRATION REJECTED MODAL */}
+      {status === 'registration_rejected' && matchedVoter && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in">
+          <div className={`w-full max-w-md rounded-3xl p-6 sm:p-8 border-4 text-center shadow-2xl ${isLight ? 'bg-white border-rose-500 text-slate-900' : 'bg-slate-900 border-rose-500 text-white'}`}>
+            <h2 className="text-xl sm:text-2xl font-black font-display text-rose-600 dark:text-rose-400">
+              {isUrdu ? 'رجسٹریشن مسترد کر دی گئی' : 'Registration Rejected'}
+            </h2>
+            <div className="text-xl font-bold my-3">{matchedVoter.name}</div>
+            <p className="text-sm opacity-80">
+              {isUrdu
+                ? 'یہ رجسٹریشن مسترد کر دی گئی ہے، اس لیے ووٹ نہیں ڈالا جا سکتا۔ افسر سے رابطہ کریں۔'
+                : 'This registration was rejected, so voting is not allowed. Please contact the presiding officer.'}
+            </p>
+            <div className="mt-6">
+              <button onClick={handleBackToKiosk} className="w-full py-3.5 px-6 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white font-black text-sm sm:text-base shadow-lg transition cursor-pointer">
+                {isUrdu ? 'واپس جائیں' : 'Back to Kiosk'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 6. LIVENESS FAILED MODAL */}
+      {status === 'liveness_failed' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in">
+          <div className={`w-full max-w-md rounded-3xl p-6 sm:p-8 border-4 text-center shadow-2xl ${isLight ? 'bg-white border-rose-500 text-slate-900' : 'bg-slate-900 border-rose-500 text-white'}`}>
+            <h2 className="text-xl sm:text-2xl font-black font-display text-rose-600 dark:text-rose-400">
+              {isUrdu ? 'زندہ ہونے کی تصدیق ناکام' : 'Liveness Check Failed'}
+            </h2>
+            <p className="text-sm opacity-80 mt-3">
+              {isUrdu
+                ? 'برائے مہربانی براہِ راست کیمرے کے سامنے آئیں، پلک جھپکائیں یا سر ہلائیں۔ تصویر یا اسکرین سے تصدیق نہیں ہوگی۔'
+                : 'Please face the camera in person and blink or move your head naturally. A photo or screen cannot verify.'}
+            </p>
+            <div className="mt-6">
+              <button onClick={handleReset} className="w-full py-3.5 px-6 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white font-black text-sm sm:text-base shadow-lg transition cursor-pointer">
                 {isUrdu ? 'دوبارہ کوشش کریں' : 'Try Again'}
               </button>
             </div>

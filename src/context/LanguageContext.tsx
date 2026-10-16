@@ -164,7 +164,7 @@ const translationsData: Record<Language, Translations> = {
 
     adminLockTitle: 'PRESIDING OFFICER SECURITY LOCK',
     adminLockDesc: 'Enter authorized Returning Officer PIN to manage voter rolls, candidates, and live tallies.',
-    enterOfficerPin: 'Enter Officer PIN (2026)',
+    enterOfficerPin: 'Enter Officer PIN',
     unlockDesk: 'Verify Officer PIN & Unlock',
     invalidPin: 'ACCESS DENIED: Invalid Official PIN.',
     voterRoll: 'Voter Roll & Registry',
@@ -255,7 +255,7 @@ const translationsData: Record<Language, Translations> = {
 
     adminLockTitle: 'پریذائیڈنگ آفیسر سیکیورٹی لاک',
     adminLockDesc: 'ووٹر لسٹ، امیدواروں اور انتخابی نتائج دیکھنے کے لیے پریذائیڈنگ آفیسر کا پن کوڈ درج کریں۔',
-    enterOfficerPin: 'آفیسر پن درج کریں (2026)',
+    enterOfficerPin: 'آفیسر پن درج کریں',
     unlockDesk: 'پن کی تصدیق کریں اور انلاک کریں',
     invalidPin: 'رسائی مسترد: غلط پن کوڈ درج کیا گیا۔',
     voterRoll: 'انتخابی ووٹر لسٹ',

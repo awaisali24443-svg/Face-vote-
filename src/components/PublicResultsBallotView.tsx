@@ -256,11 +256,11 @@ export const PublicResultsBallotView: React.FC<PublicResultsBallotViewProps> = (
         isOpen={isForm47PrintOpen}
         onClose={() => setIsForm47PrintOpen(false)}
         candidates={candidatesList}
-        totalVotes={results?.totalVotes || 0}
-        totalRegisteredVoters={results?.totalRegisteredVoters || 3450}
-        constituency="NA-127 (Lahore-XI)"
-        district="Lahore, Punjab"
-        pollingStationsCount={142}
+        totalVotes={results?.totalVotesCast || 0}
+        totalRegisteredVoters={results?.totalRegistered || 0}
+        constituency={results?.constituency || ''}
+        district=""
+        pollingStationsCount={0}
       />
     </div>
   );

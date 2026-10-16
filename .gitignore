@@ -6,3 +6,10 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Local election database — contains voter PII and biometric face templates.
+# NEVER commit it.
+data/
+*.sqlite
+*.sqlite3
+*.db
