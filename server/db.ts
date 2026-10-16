@@ -1,6 +1,7 @@
 import initSqlJs, { type Database } from 'sql.js';
 import fs from 'fs';
 import path from 'path';
+import { createHash } from 'crypto';
 
 const DB_DIR = path.resolve(process.cwd(), 'data');
 const DB_FILE = path.join(DB_DIR, 'facevote.sqlite');
@@ -82,6 +83,7 @@ export interface BallotRecord {
   id: number;
   choice: string;
   cast_at: string;
+  receipt_hash?: string;
 }
 
 const DEFAULT_CANDIDATES: CandidateRecord[] = [
@@ -94,7 +96,7 @@ const DEFAULT_CANDIDATES: CandidateRecord[] = [
     sign_icon: 'bat',
     photo_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
     display_order: 1,
-    base_votes: 1926,
+    base_votes: 0,
   },
   {
     id: 'cand-2',
@@ -105,7 +107,7 @@ const DEFAULT_CANDIDATES: CandidateRecord[] = [
     sign_icon: 'tiger',
     photo_url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80',
     display_order: 2,
-    base_votes: 1540,
+    base_votes: 0,
   },
   {
     id: 'cand-3',
@@ -116,7 +118,7 @@ const DEFAULT_CANDIDATES: CandidateRecord[] = [
     sign_icon: 'arrow',
     photo_url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80',
     display_order: 3,
-    base_votes: 980,
+    base_votes: 0,
   },
   {
     id: 'cand-4',
@@ -127,7 +129,7 @@ const DEFAULT_CANDIDATES: CandidateRecord[] = [
     sign_icon: 'scale',
     photo_url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&auto=format&fit=crop&q=80',
     display_order: 4,
-    base_votes: 450,
+    base_votes: 0,
   },
   {
     id: 'cand-5',
@@ -138,7 +140,7 @@ const DEFAULT_CANDIDATES: CandidateRecord[] = [
     sign_icon: 'eagle',
     photo_url: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&auto=format&fit=crop&q=80',
     display_order: 5,
-    base_votes: 120,
+    base_votes: 0,
   },
 ];
 
@@ -248,22 +250,26 @@ export async function getDb(): Promise<Database> {
     try {
       dbInstance.run(`ALTER TABLE candidates ADD COLUMN base_votes INTEGER DEFAULT 0;`);
     } catch {}
-
-    // Ensure all voters in database are set to approved so they can cast vote directly
     try {
-      dbInstance.run(`UPDATE voters SET approval_status = 'approved' WHERE approval_status IS NULL OR approval_status = 'pending';`);
+      dbInstance.run(`ALTER TABLE ballots ADD COLUMN receipt_hash TEXT;`);
     } catch {}
+    try {
+      dbInstance.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_voters_cnic_unique ON voters(cnic) WHERE cnic IS NOT NULL;`);
+    } catch {}
+
+    // NOTE: pending voters stay pending until an officer approves them.
+    // (Removed: a startup UPDATE that silently approved every pending voter on every boot.)
 
     // Ensure candidates have their authentic baseline vote counts and real electoral symbols
     try {
       dbInstance.run(`ALTER TABLE candidates ADD COLUMN sign_image_url TEXT;`);
     } catch {}
     try {
-      dbInstance.run(`UPDATE candidates SET base_votes = 1926, sign_icon = 'bat', sign_name = 'Cricket Bat (بلہ)' WHERE id = 'cand-1';`);
-      dbInstance.run(`UPDATE candidates SET base_votes = 1540, sign_icon = 'tiger', sign_name = 'Tiger (شیر)' WHERE id = 'cand-2';`);
-      dbInstance.run(`UPDATE candidates SET base_votes = 980, sign_icon = 'arrow', sign_name = 'Arrow (تیر)' WHERE id = 'cand-3';`);
-      dbInstance.run(`UPDATE candidates SET base_votes = 450, sign_icon = 'scale', sign_name = 'Scale of Justice (ترازو)' WHERE id = 'cand-4';`);
-      dbInstance.run(`UPDATE candidates SET base_votes = 120, sign_icon = 'eagle', sign_name = 'Eagle of Iqbal (شاہین)' WHERE id = 'cand-5';`);
+      dbInstance.run(`UPDATE candidates SET base_votes = 0, sign_icon = 'bat', sign_name = 'Cricket Bat (بلہ)' WHERE id = 'cand-1';`);
+      dbInstance.run(`UPDATE candidates SET base_votes = 0, sign_icon = 'tiger', sign_name = 'Tiger (شیر)' WHERE id = 'cand-2';`);
+      dbInstance.run(`UPDATE candidates SET base_votes = 0, sign_icon = 'arrow', sign_name = 'Arrow (تیر)' WHERE id = 'cand-3';`);
+      dbInstance.run(`UPDATE candidates SET base_votes = 0, sign_icon = 'scale', sign_name = 'Scale of Justice (ترازو)' WHERE id = 'cand-4';`);
+      dbInstance.run(`UPDATE candidates SET base_votes = 0, sign_icon = 'eagle', sign_name = 'Eagle of Iqbal (شاہین)' WHERE id = 'cand-5';`);
     } catch {}
 
     // Update config to Pakistani General Election if old default
@@ -303,86 +309,24 @@ export async function getDb(): Promise<Database> {
       }
     }
 
-    // Seed default election configs if missing (autoApprove is 1 so enrolled voters can vote directly)
+    // Seed default election configs ONLY if missing. INSERT OR IGNORE: officer
+    // changes (title, ballot lock, auto-approve, PIN) must survive a restart —
+    // the previous INSERT OR REPLACE silently reset the admin PIN to 2026 on
+    // every boot. autoApprove defaults OFF: new voters stay 'pending' until an
+    // officer approves them. The default PIN must be changed by the officer.
     const configKeys = [
       ['title', 'ELECTION COMMISSION OF PAKISTAN // GENERAL ELECTION 2026'],
       ['subtitle', 'Constituency NA-127 (Lahore-XI) // Biometric Polling Station #42'],
       ['isBallotLocked', '0'],
-      ['autoApprove', '1'],
+      ['autoApprove', '0'],
       ['adminPin', '2026'],
     ];
     for (const [key, val] of configKeys) {
-      dbInstance.run(`INSERT OR REPLACE INTO election_config (key, value) VALUES (?, ?)`, [key, val]);
+      dbInstance.run(`INSERT OR IGNORE INTO election_config (key, value) VALUES (?, ?)`, [key, val]);
     }
 
-    // Seed realistic Pakistani voters for demonstration if voter table has fewer than 3 records
-    const voterCountRes = dbInstance.exec(`SELECT COUNT(*) FROM voters`);
-    const voterCount = (voterCountRes[0]?.values[0]?.[0] as number) || 0;
-    if (voterCount < 3) {
-      const samplePakistaniVoters = [
-        {
-          name: 'Muhammad Awais Ali',
-          cnic: '35202-8491023-1',
-          approval_status: 'approved',
-          has_voted: 0,
-          photo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80',
-        },
-        {
-          name: 'Syeda Fatima Zahra',
-          cnic: '61101-3849102-4',
-          approval_status: 'approved',
-          has_voted: 0,
-          photo: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&auto=format&fit=crop&q=80',
-        },
-        {
-          name: 'Tariq Mehmood',
-          cnic: '37405-9201948-7',
-          approval_status: 'approved',
-          has_voted: 0,
-          photo: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&auto=format&fit=crop&q=80',
-        },
-        {
-          name: 'Zainab Bibi',
-          cnic: '42201-5829103-6',
-          approval_status: 'pending',
-          has_voted: 0,
-          photo: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=200&auto=format&fit=crop&q=80',
-        },
-        {
-          name: 'Chaudhry Bilal Ahmed',
-          cnic: '35101-7291048-9',
-          approval_status: 'rejected',
-          has_voted: 0,
-          photo: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&auto=format&fit=crop&q=80',
-        },
-      ];
-
-      // Generate distinct pseudo-biometric vectors for sample voters so they do not collide
-      const now = new Date().toISOString();
-
-      samplePakistaniVoters.forEach((v, index) => {
-        const distinctVector = new Array(128).fill(0).map((_, i) => {
-          return Math.sin((index + 1) * (i + 1) * 0.37) + Math.cos((index + 2) * (i + 5) * 0.19);
-        });
-        const norm = Math.sqrt(distinctVector.reduce((sum, val) => sum + val * val, 0)) || 1;
-        const normalizedVec = distinctVector.map((val) => val / norm);
-
-        dbInstance.run(
-          `INSERT INTO voters (name, cnic, embedding, photo, approval_status, has_voted, enrolled_at, approved_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-          [
-            v.name,
-            v.cnic,
-            JSON.stringify(normalizedVec),
-            v.photo,
-            v.approval_status,
-            v.has_voted,
-            now,
-            v.approval_status === 'approved' ? now : null,
-          ]
-        );
-      });
-    }
+    // No sample voters are seeded. The electoral roll must contain only
+    // citizens enrolled by an officer — a fresh install starts empty.
 
     persistDb();
     return dbInstance;
@@ -513,9 +457,14 @@ export async function enrollVoter(
   const enrolledAt = new Date().toISOString();
   const embeddingJson = JSON.stringify(embedding);
 
-  // If autoApprove is enabled in config or by default, mark as approved
-  const initialStatus: 'pending' | 'approved' = 'approved';
-  const approvedAt = enrolledAt;
+  // Approval follows the election config: auto-approve ONLY when the officer
+  // has explicitly enabled autoApprove. Otherwise the voter stays 'pending'
+  // until approved at the Admin Approval Desk.
+  const configRes = db.exec(`SELECT value FROM election_config WHERE key = 'autoApprove'`);
+  const autoApprove =
+    configRes.length && configRes[0].values.length ? configRes[0].values[0][0] === '1' : false;
+  const initialStatus: 'pending' | 'approved' = autoApprove ? 'approved' : 'pending';
+  const approvedAt = autoApprove ? enrolledAt : null;
 
   db.run(
     `INSERT INTO voters (
@@ -535,7 +484,7 @@ export async function enrollVoter(
       options?.polling_station || null,
       options?.electoral_block_code || null,
       options?.family_tree_no || null,
-      options?.nadra_verified !== undefined ? (options.nadra_verified ? 1 : 0) : 1,
+      options?.nadra_verified !== undefined ? (options.nadra_verified ? 1 : 0) : 0,
       embeddingJson,
       photo || null,
       initialStatus,
@@ -563,7 +512,7 @@ export async function enrollVoter(
     polling_station: options?.polling_station,
     electoral_block_code: options?.electoral_block_code,
     family_tree_no: options?.family_tree_no,
-    nadra_verified: options?.nadra_verified ?? true,
+    nadra_verified: options?.nadra_verified ?? false,
     embedding,
     photo,
     approval_status: initialStatus,
@@ -616,10 +565,12 @@ export async function approveVoter(
 export async function bulkApprovePending(): Promise<{ approvedCount: number }> {
   const db = await getDb();
   const now = new Date().toISOString();
+  const countRes = db.exec(`SELECT COUNT(*) FROM voters WHERE approval_status = 'pending'`);
+  const pendingCount = (countRes[0]?.values[0]?.[0] as number) || 0;
   db.run(`UPDATE voters SET approval_status = 'approved', approved_at = ? WHERE approval_status = 'pending'`, [now]);
   persistDb();
   invalidateVotersCache();
-  return { approvedCount: 1 };
+  return { approvedCount: pendingCount };
 }
 
 export async function deleteVoter(id: number): Promise<void> {
@@ -745,19 +696,9 @@ export async function matchVoterByImageOrEmbedding(
     return findClosestVoter(embedding, threshold);
   }
 
-  // 2. High-speed Image-Based Recognition (exact matching against enrolled citizen photo)
-  if (image && typeof image === 'string' && image.length > 50) {
-    for (const voter of voters) {
-      if (voter.photo && (voter.photo === image || image.includes(voter.photo.slice(0, 100)) || voter.photo.includes(image.slice(0, 100)))) {
-        return {
-          voter,
-          similarity: 0.99,
-          distance: 0.02,
-          match: true,
-        };
-      }
-    }
-  }
+  // REMOVED: photo-string matching. Comparing the submitted image string with
+  // a stored photo granted a 0.99 "match" to anyone who knew the photo URL —
+  // and voter photo URLs were publicly listed. Matching is embedding-only.
 
   return { voter: null, similarity: 0, distance: 999, match: false };
 }
@@ -852,29 +793,71 @@ export async function castBallot(voterId: number, choice: string): Promise<Ballo
   }
 
   const hasVoted = Boolean(voterRes[0].values[0][1]);
+  const approvalStatus = (voterRes[0].values[0][2] as string) || 'pending';
   if (hasVoted) {
     throw new Error('This voter has already voted');
   }
+  if (approvalStatus === 'pending') {
+    throw new Error('Voter approval is pending — an officer must approve this registration before voting');
+  }
+  if (approvalStatus === 'rejected') {
+    throw new Error('Voter registration was rejected — this citizen is not eligible to vote');
+  }
+  if (approvalStatus !== 'approved') {
+    throw new Error('Voter is not approved to vote');
+  }
 
-  // Voter is verified in the official registry (added by election admin)
-  // Direct voting is enabled for all enrolled citizens
+  // The choice must be exactly one of the candidates on the ballot paper
+  const trimmedChoice = choice.trim();
+  const candRes = db.exec(`SELECT name FROM candidates`);
+  const candidateNames =
+    candRes.length && candRes[0].values ? candRes[0].values.map((r) => r[0] as string) : [];
+  const matchedCandidate = candidateNames.find(
+    (n) => n.toLowerCase() === trimmedChoice.toLowerCase()
+  );
+  if (!matchedCandidate) {
+    throw new Error('Invalid ballot choice: not a candidate on the ballot paper');
+  }
+
   const castAt = new Date().toISOString();
+  let ballotId = 0;
+  let receiptHash = '';
 
-  // 1. Insert anonymous ballot (NEVER contains voterId or name)
-  db.run(`INSERT INTO ballots (choice, cast_at) VALUES (?, ?)`, [choice.trim(), castAt]);
-  const ballotIdRes = db.exec(`SELECT last_insert_rowid() as id`);
-  const ballotId = ballotIdRes[0].values[0][0] as number;
+  // Insert ballot + mark voted inside one transaction, so a failure between
+  // the two writes cannot desync the ballot box from the participation ledger.
+  db.run(`BEGIN TRANSACTION;`);
+  try {
+    // 1. Insert anonymous ballot (NEVER contains voterId or name)
+    db.run(`INSERT INTO ballots (choice, cast_at) VALUES (?, ?)`, [matchedCandidate, castAt]);
+    const ballotIdRes = db.exec(`SELECT last_insert_rowid() as id`);
+    ballotId = ballotIdRes[0].values[0][0] as number;
 
-  // 2. Mark voter as voted in the participation ledger
-  db.run(`UPDATE voters SET has_voted = 1 WHERE id = ?`, [voterId]);
+    // 2. Receipt = SHA-256 hash of the ballot record itself (not a random string)
+    receiptHash = createHash('sha256')
+      .update(`${ballotId}:${matchedCandidate}:${castAt}`)
+      .digest('hex');
+    try {
+      db.run(`UPDATE ballots SET receipt_hash = ? WHERE id = ?`, [receiptHash, ballotId]);
+    } catch {}
+
+    // 3. Mark voter as voted in the participation ledger
+    db.run(`UPDATE voters SET has_voted = 1 WHERE id = ?`, [voterId]);
+    db.run(`COMMIT;`);
+  } catch (txErr) {
+    try {
+      db.run(`ROLLBACK;`);
+    } catch {}
+    throw txErr;
+  }
 
   persistDb();
   invalidateVotersCache();
 
   return {
     id: ballotId,
-    choice: choice.trim(),
+    choice: matchedCandidate,
     cast_at: castAt,
+    receipt_hash: receiptHash,
   };
 }
 
@@ -973,6 +956,7 @@ export async function resetDemo(clearAll = false): Promise<void> {
     db.run(`DELETE FROM ballots;`);
     db.run(`UPDATE voters SET has_voted = 0;`);
   }
+  invalidateVotersCache();
   persistDb();
 }
 
@@ -1002,16 +986,12 @@ export async function getPublicResults(): Promise<PublicElectionResults> {
     // Check if ballot choice matches candidate name or sign
     let dynamicVotes = 0;
     for (const [choice, count] of Object.entries(votesMap)) {
-      if (
-        choice.toLowerCase() === cand.name.toLowerCase() ||
-        choice.toLowerCase().includes(cand.name.toLowerCase()) ||
-        cand.name.toLowerCase().includes(choice.toLowerCase())
-      ) {
+      if (choice.toLowerCase() === cand.name.toLowerCase()) {
         dynamicVotes += count;
       }
     }
 
-    const totalVotesForCand = (cand.base_votes || 0) + dynamicVotes;
+    const totalVotesForCand = dynamicVotes;
     totalVotesCast += totalVotesForCand;
 
     return {
@@ -1045,12 +1025,9 @@ export async function getPublicResults(): Promise<PublicElectionResults> {
 
   // Total registered voters in polling precinct
   const totalEnrolledRes = db.exec(`SELECT COUNT(*) FROM voters`);
-  const totalRegistered = Math.max(
-    (totalEnrolledRes[0]?.values[0]?.[0] as number) || 0,
-    Math.round(totalVotesCast * 1.55)
-  );
+  const totalRegistered = (totalEnrolledRes[0]?.values[0]?.[0] as number) || 0;
 
-  const turnoutPercentage = totalRegistered > 0 ? Number(((totalVotesCast / totalRegistered) * 100).toFixed(1)) : 58.4;
+  const turnoutPercentage = totalRegistered > 0 ? Number(((totalVotesCast / totalRegistered) * 100).toFixed(1)) : 0;
 
   return {
     title: config.title || 'ELECTION COMMISSION OF PAKISTAN // GENERAL ELECTION 2026',
@@ -1064,18 +1041,3 @@ export async function getPublicResults(): Promise<PublicElectionResults> {
     lastUpdated: new Date().toISOString(),
   };
 }
-
-/**
- * Simulates an incremental vote for interactive classroom / teacher demonstration
- */
-export async function simulateVote(candidateId: string): Promise<PublicElectionResults> {
-  const db = await getDb();
-  const candRes = db.exec(`SELECT name FROM candidates WHERE id = ?`, [candidateId]);
-  if (candRes.length && candRes[0].values.length) {
-    const name = candRes[0].values[0][0] as string;
-    db.run(`INSERT INTO ballots (choice, cast_at) VALUES (?, ?)`, [name, new Date().toISOString()]);
-    persistDb();
-  }
-  return getPublicResults();
-}
-
