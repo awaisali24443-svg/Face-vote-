@@ -31,6 +31,7 @@ import { offlineStorage } from '../services/offlineStorage';
 interface CheckInViewProps {
   onProceedToBallot: (voter: Voter, ballotToken?: string | null) => void;
   onGoToEnroll: () => void;
+  onViewResults?: () => void;
   lastVoteRecordedMessage?: string | null;
   onClearVoteMessage?: () => void;
 }
@@ -80,6 +81,7 @@ function checkBlinkInHistory(
 export const CheckInView: React.FC<CheckInViewProps> = ({
   onProceedToBallot,
   onGoToEnroll,
+  onViewResults,
   lastVoteRecordedMessage,
   onClearVoteMessage,
 }) => {
@@ -435,6 +437,7 @@ export const CheckInView: React.FC<CheckInViewProps> = ({
       <CastVoteKiosk
         onStartCastVote={() => setIsKioskMode(false)}
         onGoToEnroll={onGoToEnroll}
+        onViewResults={onViewResults}
         lastVoteRecordedMessage={lastVoteRecordedMessage}
         onClearVoteMessage={onClearVoteMessage}
       />
