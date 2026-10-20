@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { offlineStorage } from '../services/offlineStorage';
+import { offlineStorage, OfflinePreparationResult } from '../services/offlineStorage';
+import { loadFaceApiModels } from '../services/faceApi';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -13,15 +14,25 @@ export function usePWA() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [pendingVotesCount, setPendingVotesCount] = useState<number>(0);
   const [cachedVotersCount, setCachedVotersCount] = useState<number>(0);
+  const [cachedCandidatesCount, setCachedCandidatesCount] = useState<number>(0);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  const [isPreparingOffline, setIsPreparingOffline] = useState<boolean>(false);
+  const [isAppCached, setIsAppCached] = useState<boolean>(false);
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
 
   // Refresh counts from local storage
   const refreshCounts = useCallback(() => {
     const pending = offlineStorage.getPendingOfflineVotes();
     const voters = offlineStorage.getLocalVoters();
+    const candidates = offlineStorage.getLocalCandidates();
+    const lastSync = offlineStorage.getLastSyncTime();
     setPendingVotesCount(pending.length);
     setCachedVotersCount(voters.length);
+    setCachedCandidatesCount(candidates.length);
+    if (lastSync) {
+      const parsed = new Date(lastSync);
+      if (!Number.isNaN(parsed.getTime())) setLastSyncTime(parsed);
+    }
   }, []);
 
   // Sync data with server
@@ -38,6 +49,24 @@ export function usePWA() {
       refreshCounts();
     }
   }, [isSyncing, refreshCounts]);
+
+  // Prepare everything a normal user can prepare with one tap while online.
+  // The face-model loader warms/downloads the model files; the service worker
+  // has already pre-cached them during install. Candidate data is public.
+  // The biometric registry is included only for an officer-signed-in browser.
+  const prepareOfflineData = useCallback(async (): Promise<OfflinePreparationResult | null> => {
+    if (!navigator.onLine || isPreparingOffline) return null;
+    setIsPreparingOffline(true);
+    try {
+      await loadFaceApiModels().catch(() => false);
+      const result = await offlineStorage.prepareOfflineData();
+      setLastSyncTime(new Date());
+      return result;
+    } finally {
+      setIsPreparingOffline(false);
+      refreshCounts();
+    }
+  }, [isPreparingOffline, refreshCounts]);
 
   // Online / Offline listeners
   useEffect(() => {
@@ -64,6 +93,15 @@ export function usePWA() {
       window.matchMedia('(display-mode: standalone)').matches ||
       (window.navigator as any).standalone === true;
     setIsInstalled(isStandalone);
+
+    // An active service worker means the app shell and pre-cached face
+    // models have finished downloading for offline use.
+    if ('serviceWorker' in navigator) {
+      if (navigator.serviceWorker.controller) setIsAppCached(true);
+      navigator.serviceWorker.ready
+        .then(() => setIsAppCached(true))
+        .catch(() => setIsAppCached(false));
+    }
 
     // BeforeInstallPrompt for PWA
     const handleBeforeInstall = (e: Event) => {
@@ -94,25 +132,36 @@ export function usePWA() {
     };
   }, [syncOfflineData, refreshCounts]);
 
-  const installApp = async () => {
-    if (!deferredPrompt) return;
-    await deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      setIsInstalled(true);
+  const installApp = async (): Promise<boolean> => {
+    if (!deferredPrompt) return false;
+    try {
+      await deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setIsInstalled(true);
+      }
+      return outcome === 'accepted';
+    } catch {
+      return false;
+    } finally {
+      // A beforeinstallprompt event can only be used once.
+      setDeferredPrompt(null);
       setIsInstallable(false);
     }
-    setDeferredPrompt(null);
   };
 
   return {
     isOnline,
     isInstallable,
     isInstalled,
+    isAppCached,
     installApp,
     pendingVotesCount,
     cachedVotersCount,
+    cachedCandidatesCount,
     isSyncing,
+    isPreparingOffline,
+    prepareOfflineData,
     lastSyncTime,
     syncOfflineData,
     refreshCounts,

@@ -1,11 +1,18 @@
 // Client-side Offline Storage and Biometric Matching Engine
-import { Voter, Candidate } from '../types';
+import { Voter, Candidate, PublicElectionResults } from '../types';
 import { adminHeaders } from './adminAuth';
 
 const VOTERS_STORAGE_KEY = 'facevote_local_voters_v2';
 const CANDIDATES_STORAGE_KEY = 'facevote_local_candidates_v2';
 const OFFLINE_VOTES_KEY = 'facevote_pending_offline_votes_v2';
+const RESULTS_STORAGE_KEY = 'facevote_local_results_v1';
 const LAST_SYNC_KEY = 'facevote_last_sync_timestamp';
+
+export interface OfflinePreparationResult {
+  candidates: number;
+  voters: number;
+  registryAuthorized: boolean;
+}
 
 export interface OfflineVoteRecord {
   id: string;
@@ -180,6 +187,85 @@ class OfflineStorageService {
       console.warn('Error reading local candidates:', err);
     }
     return [];
+  }
+
+  /**
+   * Saves the last public results response so the Results screen can still
+   * open offline. The UI labels this as a saved copy, never as a live feed.
+   */
+  public saveResultsLocally(results: PublicElectionResults): void {
+    try {
+      localStorage.setItem(RESULTS_STORAGE_KEY, JSON.stringify(results));
+    } catch (err) {
+      console.warn('Could not save results to localStorage:', err);
+    }
+  }
+
+  public getLocalResults(): PublicElectionResults | null {
+    try {
+      const data = localStorage.getItem(RESULTS_STORAGE_KEY);
+      return data ? (JSON.parse(data) as PublicElectionResults) : null;
+    } catch (err) {
+      console.warn('Error reading local results:', err);
+      return null;
+    }
+  }
+
+  public getLastSyncTime(): string | null {
+    try {
+      return localStorage.getItem(LAST_SYNC_KEY);
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * One-tap device preparation while online:
+   * - downloads and saves the ballot/candidate list for every user;
+   * - downloads the voter registry ONLY when this browser already has an
+   *   officer PIN session, because biometric records must not become public
+   *   just to make the app work offline.
+   * Face models and app files are handled by the service worker / model
+   * loader, not localStorage.
+   */
+  public async prepareOfflineData(): Promise<OfflinePreparationResult> {
+    let candidates = this.getLocalCandidates().length;
+    let voters = this.getLocalVoters().length;
+    let registryAuthorized = false;
+
+    const [candidatesResult, votersResult] = await Promise.allSettled([
+      fetch('/api/candidates'),
+      fetch('/api/voters', { headers: { ...adminHeaders() } }),
+    ]);
+
+    if (candidatesResult.status === 'fulfilled' && candidatesResult.value.ok) {
+      const data = await candidatesResult.value.json().catch(() => null);
+      const list = Array.isArray(data) ? data : data?.candidates;
+      if (Array.isArray(list)) {
+        this.saveCandidatesLocally(list);
+        candidates = list.length;
+      }
+    }
+
+    if (votersResult.status === 'fulfilled') {
+      registryAuthorized = votersResult.value.ok;
+      if (votersResult.value.ok) {
+        const data = await votersResult.value.json().catch(() => null);
+        const list = Array.isArray(data) ? data : data?.voters;
+        if (Array.isArray(list)) {
+          this.saveVotersLocally(list);
+          voters = list.length;
+        }
+      }
+    }
+
+    if (candidates > 0 || voters > 0) {
+      try {
+        localStorage.setItem(LAST_SYNC_KEY, new Date().toISOString());
+      } catch {}
+    }
+
+    return { candidates, voters, registryAuthorized };
   }
 
   /**

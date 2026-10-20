@@ -18,12 +18,15 @@ function expressApiPlugin(): Plugin {
   };
 }
 
+const base = process.env.VITE_BASE || '/';
+const withBase = (filePath: string) => `${base.replace(/\/?$/, '/')}${filePath}`;
+
 export default defineConfig(() => {
   return {
     // Base path: '/' for the full server deployment (Render/local).
     // GitHub Pages serves this repo under /Face-vote-/ — the Pages workflow
     // builds with VITE_BASE=/Face-vote-/ so asset URLs resolve there.
-    base: process.env.VITE_BASE || '/',
+    base,
     plugins: [
       react(),
       tailwindcss(),
@@ -32,30 +35,33 @@ export default defineConfig(() => {
         registerType: 'autoUpdate',
         includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'icon.svg', 'face-api.min.js'],
         manifest: {
-          id: '/',
+          id: base,
           name: 'FaceVote — Biometric Election Kiosk',
           short_name: 'FaceVote',
-          description: 'Pakistani General Election Biometric Kiosk with offline capability and high-speed facial verification.',
+          description: 'Install FaceVote and use the prepared voting kiosk on this device, even when the connection drops.',
           theme_color: '#064e3b',
           background_color: '#022c22',
           display: 'standalone',
-          start_url: '/',
-          scope: '/',
+          display_override: ['standalone', 'minimal-ui'],
+          orientation: 'any',
+          categories: ['utilities', 'government'],
+          start_url: base,
+          scope: base,
           icons: [
             {
-              src: '/pwa-192x192.png',
+              src: withBase('pwa-192x192.png'),
               sizes: '192x192',
               type: 'image/png',
               purpose: 'any',
             },
             {
-              src: '/pwa-512x512.png',
+              src: withBase('pwa-512x512.png'),
               sizes: '512x512',
               type: 'image/png',
               purpose: 'any',
             },
             {
-              src: '/pwa-maskable-512x512.png',
+              src: withBase('pwa-maskable-512x512.png'),
               sizes: '512x512',
               type: 'image/png',
               purpose: 'maskable',
@@ -63,7 +69,17 @@ export default defineConfig(() => {
           ],
         },
         workbox: {
-          globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2,json,bin}'],
+          // Pre-cache the complete app shell AND the face-recognition model
+          // files. The model shards have no file extension, so `models/*` is
+          // required — without it the installed app opened offline but face
+          // verification could not load its models.
+          globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2,json,bin}', 'models/*'],
+          // SSD MobileNet is included in the public folder but is not one of
+          // the three networks this app loads, so do not make every phone
+          // download it for offline use.
+          globIgnores: ['models/ssd_mobilenetv1_model*'],
+          cleanupOutdatedCaches: true,
+          navigateFallbackDenylist: [/^\/api\//],
           maximumFileSizeToCacheInBytes: 15 * 1024 * 1024,
           runtimeCaching: [
             {

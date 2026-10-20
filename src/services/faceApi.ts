@@ -80,7 +80,10 @@ export async function loadFaceApiModels(): Promise<boolean> {
     }
 
     const faceapi = window.faceapi;
-    const localUri = '/models';
+    // BASE_URL is '/' on Render/local and '/Face-vote-/' for the optional
+    // Pages build. Keeping this relative to the deployed base lets the
+    // service worker serve the same local model files while offline.
+    const localUri = `${import.meta.env.BASE_URL}models`;
     const cdnUri = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@0.22.2/weights';
 
     try {
