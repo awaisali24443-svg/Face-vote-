@@ -117,6 +117,7 @@ export default function App() {
               <CheckInView
                 onProceedToBallot={handleProceedToBallot}
                 onGoToEnroll={handleOpenEnrollmentDesk}
+                onViewResults={() => setCurrentTab('results')}
                 lastVoteRecordedMessage={voteRecordedMessage}
                 onClearVoteMessage={() => setVoteRecordedMessage(null)}
               />

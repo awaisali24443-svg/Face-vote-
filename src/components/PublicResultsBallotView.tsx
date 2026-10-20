@@ -6,8 +6,10 @@ import {
   Printer,
   TrendingUp,
   ShieldCheck,
+  WifiOff,
 } from 'lucide-react';
 import { PublicElectionResults } from '../types';
+import { offlineStorage } from '../services/offlineStorage';
 import { renderSymbolIcon, getSymbolById } from '../services/electoralSymbols';
 import { getLocalizedCandidateName } from '../services/urduCandidateHelper';
 import { cyberSound } from '../services/soundEffects';
@@ -26,8 +28,11 @@ export const PublicResultsBallotView: React.FC<PublicResultsBallotViewProps> = (
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [isForm47PrintOpen, setIsForm47PrintOpen] = useState<boolean>(false);
+  const [isShowingSavedResults, setIsShowingSavedResults] = useState<boolean>(false);
 
-  // Fetch live election results from backend
+  // Fetch live election results from backend. Every successful response is
+  // saved on this device; if the network is unavailable, show that saved
+  // copy and label it clearly instead of leaving a blank results screen.
   const fetchResults = async (showSpinner = false) => {
     if (showSpinner) setIsRefreshing(true);
     try {
@@ -35,9 +40,18 @@ export const PublicResultsBallotView: React.FC<PublicResultsBallotViewProps> = (
       if (res.ok) {
         const data: PublicElectionResults = await res.json();
         setResults(data);
+        setIsShowingSavedResults(false);
+        offlineStorage.saveResultsLocally(data);
+        return;
       }
+      throw new Error(`Results request failed: ${res.status}`);
     } catch (err) {
-      console.warn('Failed to fetch public results:', err);
+      console.warn('Failed to fetch public results, using saved copy if available:', err);
+      const saved = offlineStorage.getLocalResults();
+      if (saved) {
+        setResults(saved);
+        setIsShowingSavedResults(true);
+      }
     } finally {
       setIsLoading(false);
       if (showSpinner) setIsRefreshing(false);
@@ -94,9 +108,25 @@ export const PublicResultsBallotView: React.FC<PublicResultsBallotViewProps> = (
             >
               {isUrdu ? 'سرکاری انتخابی نتائج' : 'Live Election Results'}
             </h1>
-            <div className="flex items-center space-x-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>{isUrdu ? 'براہ راست اپ ڈیٹ' : 'Live Feed Active'}</span>
+            <div
+              className={`flex items-center space-x-2 text-xs font-semibold ${
+                isShowingSavedResults ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'
+              }`}
+            >
+              {isShowingSavedResults ? (
+                <WifiOff className="w-3.5 h-3.5" />
+              ) : (
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              )}
+              <span>
+                {isShowingSavedResults
+                  ? isUrdu
+                    ? 'محفوظ شدہ نتائج — آف لائن کاپی'
+                    : 'Saved Results — Offline Copy'
+                  : isUrdu
+                  ? 'براہ راست اپ ڈیٹ'
+                  : 'Live Feed Active'}
+              </span>
             </div>
           </div>
         </div>
@@ -152,6 +182,13 @@ export const PublicResultsBallotView: React.FC<PublicResultsBallotViewProps> = (
       >
         {/* CANDIDATE GRID */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+          {candidatesList.length === 0 && (
+            <div className={`md:col-span-2 p-6 rounded-3xl border-2 text-center font-bold ${isLight ? 'bg-white border-blue-200 text-blue-950' : 'bg-slate-900 border-slate-700 text-slate-100'}`}>
+              {isUrdu
+                ? 'اس ڈیوائس پر ابھی کوئی نتیجہ محفوظ نہیں۔ ایک بار انٹرنیٹ سے منسلک ہو کر تازہ کریں۔'
+                : 'No results are saved on this device yet. Connect to the internet once and tap Refresh.'}
+            </div>
+          )}
           {candidatesList.map((cand) => {
             const symbol = getSymbolById(cand.sign_icon || cand.sign_name);
             const isLeading = cand.isLeading;

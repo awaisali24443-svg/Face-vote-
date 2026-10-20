@@ -70,11 +70,15 @@ export const PWAInstallBanner: React.FC = () => {
                 ? 'bg-amber-500/20 border border-amber-500/50 text-amber-300 hover:bg-amber-500/30 cursor-pointer'
                 : 'bg-amber-950/40 border border-amber-800/50 text-amber-400 opacity-80 cursor-default'
             }`}
-            title={isOnline ? 'Click to synchronize pending offline votes' : 'Votes stored safely in encrypted queue. Will sync automatically once online.'}
+            title={
+              isOnline
+                ? 'Saved offline votes stay on this device for officer review. They cannot be auto-cast without a new live check-in token.'
+                : 'Votes are stored on this device until an officer can review them online.'
+            }
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
             <span>
-              {pendingVotesCount} {isUrdu ? 'آف لائن ووٹ پینڈنگ' : 'Offline Votes Pending'}
+              {pendingVotesCount} {isUrdu ? 'محفوظ ووٹ' : 'Saved Votes'}
             </span>
           </button>
         )}

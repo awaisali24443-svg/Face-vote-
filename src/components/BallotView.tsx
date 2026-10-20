@@ -36,6 +36,7 @@ export const BallotView: React.FC<BallotViewProps> = ({
   const [selectedChoice, setSelectedChoice] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [voteSuccess, setVoteSuccess] = useState<boolean>(false);
+  const [submissionMode, setSubmissionMode] = useState<'online' | 'offline'>('online');
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Load candidates from backend or local cache
@@ -91,7 +92,7 @@ export const BallotView: React.FC<BallotViewProps> = ({
     setSelectedChoice(choiceName);
   };
 
-  // Submit cast ballot securely (Online or Offline with encrypted local queue)
+  // Submit a ballot online, or save it in this device's local offline queue.
   const handleSubmitVote = async () => {
     if (!selectedChoice) {
       cyberSound.playSecurityAlarm();
@@ -118,6 +119,7 @@ export const BallotView: React.FC<BallotViewProps> = ({
           const data = await response.json();
           if (data.success) {
             // Mark voted locally as well
+            setSubmissionMode('online');
             offlineStorage.markVoterAsVotedLocally(voter.id);
             cyberSound.playVoteSuccess();
             setVoteSuccess(true);
@@ -149,18 +151,20 @@ export const BallotView: React.FC<BallotViewProps> = ({
       }
     }
 
-    // Offline mode recording: store in local encrypted queue and immediately mark voter as voted
+    // Offline mode: store the ballot in this device's local queue and mark
+    // the voter as voted on THIS device. It is not a server-counted vote
+    // yet — an officer must review the saved queue when a connection returns,
+    // because final casting requires the live check-in token.
     try {
+      setSubmissionMode('offline');
       offlineStorage.recordOfflineVote(voter.id, selectedChoice);
       cyberSound.playVoteSuccess();
       setVoteSuccess(true);
       setTimeout(() => {
         onVoteComplete(
-          isUrdu
-            ? `${voter.name}`
-            : `${voter.name}`
+          isUrdu ? `آف لائن محفوظ — ${voter.name}` : `Offline saved — ${voter.name}`
         );
-      }, 1800);
+      }, 2600);
     } catch {
       setIsSubmitting(false);
       cyberSound.playSecurityAlarm();
@@ -187,10 +191,23 @@ export const BallotView: React.FC<BallotViewProps> = ({
               isLight ? 'text-blue-950' : 'text-white'
             }`}
           >
-            {isUrdu ? 'ووٹ درج ہو گیا' : 'Vote Cast Successfully!'}
+            {submissionMode === 'offline'
+              ? (isUrdu ? 'ووٹ اس ڈیوائس میں محفوظ ہو گیا' : 'Vote Saved on This Device')
+              : isUrdu
+              ? 'ووٹ درج ہو گیا'
+              : 'Vote Cast Successfully!'}
           </h2>
           <p className="text-base sm:text-lg font-bold text-emerald-600 dark:text-emerald-400 mt-2">
             {voter.name}
+          </p>
+          <p className={`text-sm sm:text-base font-semibold mt-3 ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>
+            {submissionMode === 'offline'
+              ? (isUrdu
+                  ? 'انٹرنیٹ واپس آنے پر افسر اس محفوظ ووٹ کا جائزہ لے گا۔'
+                  : 'When the internet returns, an officer must review this saved vote before it can be counted.')
+              : isUrdu
+              ? 'آپ کا ووٹ سرور میں درج ہو چکا ہے۔'
+              : 'Your vote has been recorded by the server.'}
           </p>
         </div>
       ) : (
