@@ -11,6 +11,7 @@
 // ============================================================
 
 import { extractDescriptorFromImageSource } from './faceApi';
+import { TEST_VOTER_PHOTOS } from './testVoterPhotos';
 import { localAdd, localGetAll, localMetaGet, localMetaSet, localPut } from './localDb';
 import { offlineStorage } from './offlineStorage';
 import type { Voter } from '../types';
@@ -26,8 +27,6 @@ interface TestVoterDef {
   votedFor?: string; // candidate name this test voter has already voted for
 }
 
-const base = import.meta.env.BASE_URL || '/';
-
 export const TEST_VOTERS: TestVoterDef[] = [
   {
     name: 'Ahmed Raza (Test)',
@@ -35,7 +34,7 @@ export const TEST_VOTERS: TestVoterDef[] = [
     father_name: 'Muhammad Raza',
     gender: 'Male',
     dob: '1998-04-12',
-    photoFile: `${base}sample-voters/voter-1.jpg`,
+    photoFile: TEST_VOTER_PHOTOS['voter-1'],
     approval_status: 'approved',
   },
   {
@@ -44,7 +43,7 @@ export const TEST_VOTERS: TestVoterDef[] = [
     father_name: 'Noor Muhammad',
     gender: 'Female',
     dob: '2000-09-03',
-    photoFile: `${base}sample-voters/voter-2.jpg`,
+    photoFile: TEST_VOTER_PHOTOS['voter-2'],
     approval_status: 'approved',
   },
   {
@@ -53,7 +52,7 @@ export const TEST_VOTERS: TestVoterDef[] = [
     father_name: 'Ghulam Hussain',
     gender: 'Male',
     dob: '1995-01-25',
-    photoFile: `${base}sample-voters/voter-3.jpg`,
+    photoFile: TEST_VOTER_PHOTOS['voter-3'],
     approval_status: 'approved',
   },
   {
@@ -62,7 +61,7 @@ export const TEST_VOTERS: TestVoterDef[] = [
     father_name: 'Sheikh Rafique',
     gender: 'Male',
     dob: '1992-07-19',
-    photoFile: `${base}sample-voters/voter-4.jpg`,
+    photoFile: TEST_VOTER_PHOTOS['voter-4'],
     approval_status: 'approved',
     votedFor: 'Mian Tariq Mehmood Sharif',
   },
@@ -72,7 +71,7 @@ export const TEST_VOTERS: TestVoterDef[] = [
     father_name: 'Muhammad Siddique',
     gender: 'Female',
     dob: '2001-12-08',
-    photoFile: `${base}sample-voters/voter-5.jpg`,
+    photoFile: TEST_VOTER_PHOTOS['voter-5'],
     approval_status: 'approved',
   },
   {
@@ -81,7 +80,7 @@ export const TEST_VOTERS: TestVoterDef[] = [
     father_name: 'Tariq Mehmood',
     gender: 'Male',
     dob: '1999-05-30',
-    photoFile: `${base}sample-voters/voter-6.jpg`,
+    photoFile: TEST_VOTER_PHOTOS['voter-6'],
     approval_status: 'pending',
   },
 ];
