@@ -73,7 +73,7 @@ export default defineConfig(() => {
           // files. The model shards have no file extension, so `models/*` is
           // required — without it the installed app opened offline but face
           // verification could not load its models.
-          globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2,json,bin}', 'models/*'],
+          globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2,json,bin,jpg,jpeg,webp}', 'models/*'],
           // SSD MobileNet is included in the public folder but is not one of
           // the three networks this app loads, so do not make every phone
           // download it for offline use.

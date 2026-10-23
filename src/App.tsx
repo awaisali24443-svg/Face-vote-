@@ -6,6 +6,8 @@ import { BallotView } from './components/BallotView';
 import { PublicResultsBallotView } from './components/PublicResultsBallotView';
 import { AdminView, AdminTab } from './components/AdminView';
 import { loadFaceApiModels } from './services/faceApi';
+import { isDeviceMode } from './services/deviceMode';
+import { ensureTestVotersSeeded } from './services/testVoters';
 import { Voter } from './types';
 import { useTheme } from './context/ThemeContext';
 import { useLanguage } from './context/LanguageContext';
@@ -28,6 +30,16 @@ export default function App() {
       .then(() => setModelsReady(true))
       .catch((err) => console.warn('Model initialization notice:', err));
   }, []);
+
+  // Device Mode demo: once face models are ready, seed the test voters
+  // (their face embeddings are computed on this device from bundled photos).
+  useEffect(() => {
+    if (modelsReady && isDeviceMode()) {
+      ensureTestVotersSeeded().catch((err) =>
+        console.warn('Test voter seeding notice:', err)
+      );
+    }
+  }, [modelsReady]);
 
   // Fetch initial threshold configuration
   useEffect(() => {
