@@ -49,11 +49,11 @@ const DEFAULT_PIN = '2026';
 const DEFAULT_THRESHOLD = 0.82;
 
 const DEFAULT_CANDIDATES = [
-  { id: 'cand-1', name: 'Barrister Muhammad Ali Khan', party: 'Pakistan Tehreek-e-Insaf (PTI)', tagline: 'Empowering youth, judicial transparency, anti-corruption reforms, and citizen digital governance.', sign_name: 'Cricket Bat (بلہ)', sign_icon: 'bat', photo_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80', display_order: 1, base_votes: 0 },
-  { id: 'cand-2', name: 'Mian Tariq Mehmood Sharif', party: 'Pakistan Muslim League - Nawaz (PML-N)', tagline: 'Economic growth corridors, national motorways, power infrastructure, and industrial revitalization.', sign_name: 'Tiger (شیر)', sign_icon: 'tiger', photo_url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80', display_order: 2, base_votes: 0 },
-  { id: 'cand-3', name: 'Syeda Fatima Zahra Gilani', party: 'Pakistan Peoples Party Parliamentarians (PPPP)', tagline: 'Social security nets, Benazir Income Support, healthcare access for rural communities, and labor rights.', sign_name: 'Arrow (تیر)', sign_icon: 'arrow', photo_url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80', display_order: 3, base_votes: 0 },
-  { id: 'cand-4', name: 'Hafiz Asad Qureshi', party: 'Jamaat-e-Islami (JI)', tagline: 'Honest municipal leadership, clean drinking water filtration, and youth IT training programs.', sign_name: 'Scale of Justice (ترازو)', sign_icon: 'scale', photo_url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&auto=format&fit=crop&q=80', display_order: 4, base_votes: 0 },
-  { id: 'cand-5', name: 'Mr. Awais Ali', party: 'Independent Candidate (آزاد امیدوار)', tagline: 'Grassroots constituency representation, IT innovation hubs, and community welfare in NA-127.', sign_name: 'Eagle of Iqbal (شاہین)', sign_icon: 'eagle', photo_url: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&auto=format&fit=crop&q=80', display_order: 5, base_votes: 0 },
+  { id: 'cand-1', name: 'Barrister Muhammad Ali Khan', party: 'Pakistan Tehreek-e-Insaf (PTI)', tagline: 'Empowering youth, judicial transparency, anti-corruption reforms, and citizen digital governance.', sign_name: 'Cricket Bat (بلہ)', sign_icon: 'bat', photo_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80', display_order: 1, base_votes: 0, education: 'LLB (Hons), University of the Punjab', profession: 'Advocate — Barrister-at-Law', age: 47, hometown: 'Lahore, Punjab', experience: 'Former MNA (2018–2023); chaired the Standing Committee on Law & Justice' },
+  { id: 'cand-2', name: 'Mian Tariq Mehmood Sharif', party: 'Pakistan Muslim League - Nawaz (PML-N)', tagline: 'Economic growth corridors, national motorways, power infrastructure, and industrial revitalization.', sign_name: 'Tiger (شیر)', sign_icon: 'tiger', photo_url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80', display_order: 2, base_votes: 0, education: 'MBA, Lahore University of Management Sciences', profession: 'Industrialist / Businessman', age: 55, hometown: 'Lahore, Punjab', experience: 'Two-time MPA; former Provincial Minister for Industries & Trade' },
+  { id: 'cand-3', name: 'Syeda Fatima Zahra Gilani', party: 'Pakistan Peoples Party Parliamentarians (PPPP)', tagline: 'Social security nets, Benazir Income Support, healthcare access for rural communities, and labor rights.', sign_name: 'Arrow (تیر)', sign_icon: 'arrow', photo_url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80', display_order: 3, base_votes: 0, education: 'MBBS, King Edward Medical University', profession: 'Medical Doctor & Social Worker', age: 44, hometown: 'Multan, Punjab', experience: 'Director, Fatima Zahra Welfare Hospital; former Senator' },
+  { id: 'cand-4', name: 'Hafiz Asad Qureshi', party: 'Jamaat-e-Islami (JI)', tagline: 'Honest municipal leadership, clean drinking water filtration, and youth IT training programs.', sign_name: 'Scale of Justice (ترازو)', sign_icon: 'scale', photo_url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&auto=format&fit=crop&q=80', display_order: 4, base_votes: 0, education: 'MA Islamic Studies, University of Karachi', profession: 'Religious Scholar & Educationist', age: 52, hometown: 'Lahore, Punjab', experience: 'Runs a network of schools and free IT training centres' },
+  { id: 'cand-5', name: 'Mr. Awais Ali', party: 'Independent Candidate (آزاد امیدوار)', tagline: 'Grassroots constituency representation, IT innovation hubs, and community welfare in NA-127.', sign_name: 'Eagle of Iqbal (شاہین)', sign_icon: 'eagle', photo_url: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&auto=format&fit=crop&q=80', display_order: 5, base_votes: 0, education: 'BS Computer Science, GCMS Shabqadar', profession: 'Student & Software Developer', hometown: 'Shabqadar, Khyber Pakhtunkhwa', experience: 'Built the FuelRun expo demo and the WAIS Player app' },
 ];
 
 // ---------- crypto helpers ----------
@@ -317,7 +317,7 @@ export async function handleLocalApi(
 
     // ---- candidates admin ----
     if (method === 'POST' && path === '/admin/candidates') {
-      const { id, name, party, tagline, sign_name, sign_icon, photo_url, display_order } = body || {};
+      const { id, name, party, tagline, sign_name, sign_icon, photo_url, display_order, education, profession, age, hometown, experience } = body || {};
       if (!name || typeof name !== 'string' || !name.trim()) return fail(400, 'Candidate name is required');
       if (!sign_name || typeof sign_name !== 'string' || !sign_name.trim())
         return fail(400, 'Electoral symbol/sign name is required');
@@ -331,6 +331,11 @@ export async function handleLocalApi(
         photo_url: photo_url || '',
         display_order: Number(display_order || 0),
         base_votes: 0,
+        education: typeof education === 'string' && education.trim() ? education.trim() : undefined,
+        profession: typeof profession === 'string' && profession.trim() ? profession.trim() : undefined,
+        age: typeof age === 'number' && age >= 18 && age <= 120 ? age : undefined,
+        hometown: typeof hometown === 'string' && hometown.trim() ? hometown.trim() : undefined,
+        experience: typeof experience === 'string' && experience.trim() ? experience.trim() : undefined,
       };
       await localPut('candidates', candidate);
       return ok({ success: true, candidate });
@@ -560,12 +565,16 @@ async function match(b: any): Promise<LocalApiResult> {
 
   let best: any = null;
   let bestSim = -1;
+  let secondSim = -1;
   for (const voter of voters) {
     if (Array.isArray(voter.embedding) && voter.embedding.length === 128) {
       const sim = cosineSimilarity(rawEmbedding, voter.embedding);
       if (sim > bestSim) {
+        secondSim = bestSim;
         bestSim = sim;
         best = voter;
+      } else if (sim > secondSim) {
+        secondSim = sim;
       }
     }
   }
@@ -575,6 +584,18 @@ async function match(b: any): Promise<LocalApiResult> {
       match: false,
       reason: 'not_registered',
       similarity: Number(Math.max(0, bestSim).toFixed(4)),
+      threshold,
+    });
+  }
+
+  // Ambiguity guard: if a DIFFERENT enrolled voter is almost as similar to
+  // this face as the best match, the identification is not trustworthy —
+  // refuse rather than risk handing a ballot to the wrong person.
+  if (secondSim >= threshold && bestSim - secondSim < 0.03) {
+    return ok({
+      match: false,
+      reason: 'ambiguous_match',
+      similarity: Number(bestSim.toFixed(4)),
       threshold,
     });
   }
@@ -721,6 +742,11 @@ async function computePublicResults(): Promise<any> {
       votes,
       percentage: totalVotesCast > 0 ? Number(((votes / totalVotesCast) * 100).toFixed(1)) : 0,
       isLeading: votes === maxVotes && votes > 0,
+      education: cand.education,
+      profession: cand.profession,
+      age: cand.age,
+      hometown: cand.hometown,
+      experience: cand.experience,
     })),
     lastUpdated: new Date().toISOString(),
   };

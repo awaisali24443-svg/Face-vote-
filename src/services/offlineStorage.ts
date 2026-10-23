@@ -125,6 +125,7 @@ class OfflineStorageService {
 
     let bestVoter: Voter | null = null;
     let maxSimilarity = -1;
+    let secondSimilarity = -1;
     let minDistance = 999;
 
     for (const voter of voters) {
@@ -136,10 +137,30 @@ class OfflineStorageService {
       const dist = euclideanDistance(probeEmbedding, voter.embedding);
 
       if (sim > maxSimilarity) {
+        secondSimilarity = maxSimilarity;
         maxSimilarity = sim;
         minDistance = dist;
         bestVoter = voter;
+      } else if (sim > secondSimilarity) {
+        secondSimilarity = sim;
       }
+    }
+
+    // Ambiguity guard: another enrolled voter is almost as similar — the
+    // identification is not trustworthy enough to hand out a ballot.
+    if (
+      bestVoter !== null &&
+      maxSimilarity >= threshold &&
+      secondSimilarity >= threshold &&
+      maxSimilarity - secondSimilarity < 0.03
+    ) {
+      return {
+        match: false,
+        voter: null,
+        similarity: Number(maxSimilarity.toFixed(4)),
+        distance: Number(minDistance.toFixed(4)),
+        reason: 'ambiguous_match',
+      };
     }
 
     // Strict biometric verification: must meet threshold (default 0.78 cosine / <= 0.60 euclidean)
