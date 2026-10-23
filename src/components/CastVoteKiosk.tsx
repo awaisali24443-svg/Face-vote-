@@ -19,7 +19,6 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { usePWA } from '../hooks/usePWA';
 import { getAppMode, setAppMode, type AppMode } from '../services/deviceMode';
-import { ensureTestVotersSeeded } from '../services/testVoters';
 
 interface CastVoteKioskProps {
   onStartCastVote: () => void;
@@ -54,8 +53,6 @@ export const CastVoteKiosk: React.FC<CastVoteKioskProps> = ({
   const [showInstallHelp, setShowInstallHelp] = useState<boolean>(false);
   const [prepareMessage, setPrepareMessage] = useState<string | null>(null);
   const [appMode, setAppModeState] = useState<AppMode>(() => getAppMode());
-  const [testVoterMessage, setTestVoterMessage] = useState<string | null>(null);
-  const [isLoadingTestVoters, setIsLoadingTestVoters] = useState<boolean>(false);
 
   const isOfflineSavedVote =
     !!lastVoteRecordedMessage &&
@@ -106,36 +103,6 @@ export const CastVoteKiosk: React.FC<CastVoteKioskProps> = ({
           ? `بیلٹ لسٹ محفوظ ہو گئی (${result.candidates} امیدوار)۔ ووٹر لسٹ صرف افسر کے سائن ان کے بعد ڈاؤن لوڈ ہوگی تاکہ بائیو میٹرک ڈیٹا محفوظ رہے۔`
           : `Ballot list saved (${result.candidates} candidates). The voter list downloads only after officer sign-in, to protect biometric data.`
       );
-    }
-  };
-
-  const handleLoadTestVoters = async () => {
-    cyberSound.playClick();
-    setIsLoadingTestVoters(true);
-    setTestVoterMessage(null);
-    try {
-      const result = await ensureTestVotersSeeded();
-      if (result.seeded > 0) {
-        setTestVoterMessage(
-          isUrdu
-            ? `${result.seeded} ٹیسٹ ووٹر اس ڈیوائس پر تیار ہیں۔ چیک اِن میں ان کی تصویر کیمرے کے سامنے رکھ کر ٹیسٹ کریں۔`
-            : `${result.seeded} test voters are ready on this device. At Check-In, hold a test voter's photo up to the camera to try the full flow.`
-        );
-      } else {
-        setTestVoterMessage(
-          isUrdu
-            ? 'ٹیسٹ ووٹر پہلے سے اس ڈیوائس پر موجود ہیں۔'
-            : 'Test voters are already loaded on this device.'
-        );
-      }
-    } catch {
-      setTestVoterMessage(
-        isUrdu
-          ? 'ٹیسٹ ووٹر لوڈ نہیں ہو سکے — صفحہ دوبارہ لوڈ کر کے کوشش کریں۔'
-          : 'Test voters could not be loaded — reload the page and try again.'
-      );
-    } finally {
-      setIsLoadingTestVoters(false);
     }
   };
 
@@ -472,18 +439,20 @@ export const CastVoteKiosk: React.FC<CastVoteKioskProps> = ({
               </p>
               <p className={`text-xs sm:text-sm font-semibold mt-1 ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>
                 {isUrdu
-                  ? 'تمام ووٹر، ووٹ اور نتائج صرف اسی ڈیوائس میں محفوظ ہوتے ہیں۔ نہ سرور چاہیے، نہ انٹرنیٹ۔'
-                  : 'All voters, votes and results are stored only on this device. No server, no internet needed.'}
+                  ? 'تمام ووٹر، ووٹ اور نتائج صرف اسی ڈیوائس میں محفوظ ہوتے ہیں۔ کوئی ڈمی ووٹر شامل نہیں — افسر خود ووٹر درج کرتا ہے۔'
+                  : 'All voters, votes and results are stored only on this device. No dummy voters are included — the officer enrolls each voter.'}
               </p>
               <div className="mt-3 flex flex-wrap gap-2.5">
                 <button
                   type="button"
-                  onClick={handleLoadTestVoters}
-                  disabled={isLoadingTestVoters}
-                  className="py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs sm:text-sm flex items-center gap-2 cursor-pointer active:scale-95 disabled:opacity-60"
+                  onClick={() => {
+                    cyberSound.playClick();
+                    onGoToEnroll();
+                  }}
+                  className="py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs sm:text-sm flex items-center gap-2 cursor-pointer active:scale-95"
                 >
-                  {isLoadingTestVoters ? <RefreshCw className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
-                  <span>{isUrdu ? 'ٹیسٹ ووٹر لوڈ کریں' : 'Load Test Voters'}</span>
+                  <UserPlus className="w-4 h-4" />
+                  <span>{isUrdu ? 'ووٹر درج کریں' : 'Enroll Voters'}</span>
                 </button>
                 <button
                   type="button"
@@ -493,9 +462,6 @@ export const CastVoteKiosk: React.FC<CastVoteKioskProps> = ({
                   {isUrdu ? 'سرور موڈ پر جائیں' : 'Switch to Server Mode'}
                 </button>
               </div>
-              {testVoterMessage && (
-                <p className="mt-3 text-xs sm:text-sm font-bold text-emerald-700 dark:text-emerald-300">{testVoterMessage}</p>
-              )}
             </>
           ) : (
             <>
@@ -519,7 +485,11 @@ export const CastVoteKiosk: React.FC<CastVoteKioskProps> = ({
         </div>
 
         <p className={`mt-4 text-[11px] sm:text-xs font-semibold leading-relaxed ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-          {isUrdu
+          {appMode === 'device'
+            ? isUrdu
+              ? 'نوٹ: ڈیوائس موڈ میں رجسٹریشن، منظوری، ووٹ اور نتائج سب اسی ڈیوائس پر مکمل ہوتے ہیں۔ ووٹر صرف افسر درج کرتا ہے۔'
+              : 'Note: In Device Mode, enrollment, approval, voting and results all complete on this device. Voters are added only by the officer.'
+            : isUrdu
             ? 'نوٹ: نئی رجسٹریشن اور حتمی ووٹ گنتی کے لیے سرور ضروری ہے۔ آف لائن ووٹ اس ڈیوائس میں محفوظ رہتا ہے، خودکار طور پر گنا نہیں جاتا۔'
             : 'Note: New registration and final vote counting need the server. An offline vote stays saved on this device — it is not counted automatically.'}
         </p>

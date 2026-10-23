@@ -10,8 +10,12 @@ import {
 } from 'lucide-react';
 import { Voter, Candidate } from '../types';
 import { cyberSound } from '../services/soundEffects';
-import { renderSymbolIcon, getSymbolById } from '../services/electoralSymbols';
-import { getLocalizedCandidateName } from '../services/urduCandidateHelper';
+import { renderSymbolIcon } from '../services/electoralSymbols';
+import {
+  getLocalizedCandidateName,
+  getLocalizedPartyName,
+  getLocalizedSymbolName,
+} from '../services/urduCandidateHelper';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { offlineStorage } from '../services/offlineStorage';
@@ -143,7 +147,11 @@ export const BallotView: React.FC<BallotViewProps> = ({
         const errData = await response.json().catch(() => ({}));
         setSubmitError(
           errData.error ||
-            (isUrdu ? 'سرور نے ووٹ مسترد کر دیا۔' : 'The server rejected this ballot.')
+            (isUrdu
+              ? 'ووٹ مسترد کر دیا گیا۔'
+              : isDeviceMode()
+              ? 'This device rejected this ballot.'
+              : 'The server rejected this ballot.')
         );
         cyberSound.playSecurityAlarm();
         setIsSubmitting(false);
@@ -172,6 +180,10 @@ export const BallotView: React.FC<BallotViewProps> = ({
       cyberSound.playSecurityAlarm();
     }
   };
+
+  const constituencyLabel = voter.constituency || 'NA-127 (Lahore-XI)';
+  const pollingStationLabel =
+    voter.polling_station || 'Polling Station #42, Govt. Model High School';
 
   return (
     <div className="w-full max-w-5xl mx-auto px-2 sm:px-4 py-3 sm:py-6">
@@ -208,7 +220,11 @@ export const BallotView: React.FC<BallotViewProps> = ({
                   ? 'انٹرنیٹ واپس آنے پر افسر اس محفوظ ووٹ کا جائزہ لے گا۔'
                   : 'When the internet returns, an officer must review this saved vote before it can be counted.')
               : isUrdu
-              ? 'آپ کا ووٹ سرور میں درج ہو چکا ہے۔'
+              ? isDeviceMode()
+                ? 'آپ کا ووٹ اسی ڈیوائس میں درج ہو چکا ہے۔'
+                : 'آپ کا ووٹ سرور میں درج ہو چکا ہے۔'
+              : isDeviceMode()
+              ? 'Your vote has been recorded on this device.'
               : 'Your vote has been recorded by the server.'}
           </p>
         </div>
@@ -265,96 +281,211 @@ export const BallotView: React.FC<BallotViewProps> = ({
             </button>
           </div>
 
-          {/* BALLOT PAPER GRID (CANDIDATE NAME & SYMBOL PICTURE) */}
+          {/* REALISTIC ECP NATIONAL ASSEMBLY BALLOT PAPER (green paper) */}
           {isLoading ? (
-            <div className="p-16 text-center text-blue-600 flex flex-col items-center justify-center space-y-4">
+            <div className="p-16 text-center text-emerald-900 flex flex-col items-center justify-center space-y-4 bg-[#dcefd9] rounded-md border-2 border-emerald-900/60">
               <RefreshCw className="w-10 h-10 animate-spin" />
               <p className="font-bold text-sm">{isUrdu ? 'بیلٹ پیپر لوڈ ہو رہا ہے...' : 'Loading Ballot Paper...'}</p>
             </div>
           ) : (
-            <div
-              className={`p-4 sm:p-6 md:p-8 rounded-3xl border-4 transition-all shadow-xl ${
-                isLight
-                  ? 'bg-[#f7fbff] border-blue-600 shadow-blue-200/50'
-                  : 'bg-slate-950 border-blue-500/80 shadow-[0_0_40px_rgba(37,99,235,0.25)]'
-              }`}
-            >
-              {/* CANDIDATE GRID */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                {(Array.isArray(candidates) ? candidates : []).map((candidate) => {
-                  const isSelected = selectedChoice === candidate.name;
-                  const symbol = getSymbolById(candidate.sign_icon || candidate.sign_name);
+            <div className="relative overflow-hidden rounded-[4px] border-[3px] border-emerald-950/80 bg-[#dcefd9] text-slate-950 shadow-2xl">
+              {/* faint printed-dot texture + watermark */}
+              <div
+                className="absolute inset-0 pointer-events-none opacity-[0.35]"
+                style={{
+                  backgroundImage:
+                    'radial-gradient(circle at 1px 1px, rgba(20,83,45,0.13) 1px, transparent 0)',
+                  backgroundSize: '22px 22px',
+                }}
+              />
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <span className="text-[9rem] sm:text-[13rem] font-black tracking-tighter text-emerald-900/[0.05] select-none">
+                  ECP
+                </span>
+              </div>
 
-                  return (
-                    <div
-                      key={candidate.id}
-                      id={`ballot-candidate-${candidate.id}`}
-                      onClick={() => handleSelectChoice(candidate.name)}
-                      className={`p-5 sm:p-6 rounded-3xl border-3 transition-all duration-200 cursor-pointer flex items-center justify-between gap-4 group relative overflow-hidden ${
-                        isSelected
-                          ? isLight
-                            ? 'bg-white border-emerald-600 ring-4 ring-emerald-500/30 shadow-xl scale-[1.01]'
-                            : 'bg-slate-900 border-emerald-400 ring-4 ring-emerald-500/40 shadow-[0_0_30px_rgba(16,185,129,0.35)] scale-[1.01]'
-                          : isLight
-                          ? 'bg-white border-slate-200 hover:border-blue-400 hover:shadow-md'
-                          : 'bg-slate-900/80 border-slate-800 hover:border-blue-700 hover:bg-slate-900'
-                      }`}
-                    >
-                      {/* Left: Picture of Symbol & Candidate Name */}
-                      <div className="flex items-center space-x-4 sm:space-x-5 flex-1 min-w-0">
-                        {/* PIC OF CANDIDATE'S ELECTORAL SYMBOL */}
-                        <div
-                          className={`w-20 h-20 sm:w-24 sm:h-24 rounded-2xl border-2 flex items-center justify-center shrink-0 shadow-md transition-all group-hover:scale-105 ${
-                            isSelected
-                              ? 'bg-emerald-50 border-emerald-500 text-emerald-700'
-                              : isLight
-                              ? `${symbol.bgClass || 'bg-blue-50'} ${symbol.borderClass || 'border-blue-300'}`
-                              : 'bg-slate-950 border-slate-700'
-                          }`}
-                        >
-                          <div className="w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center">
-                            {renderSymbolIcon(
-                              candidate.sign_icon || candidate.sign_name,
-                              'w-12 h-12 sm:w-14 sm:h-14 text-blue-600 dark:text-blue-400',
-                              candidate.sign_image_url
-                            )}
-                          </div>
-                        </div>
+              <div className="relative flex">
+                {/* COUNTERFOIL (perforated stub, as on a real ballot book) */}
+                <div className="hidden md:flex w-16 shrink-0 flex-col items-center justify-between border-r-2 border-dashed border-emerald-950/60 py-4">
+                  <span
+                    className="text-[10px] font-black tracking-[0.3em] text-emerald-950/80"
+                    style={{ writingMode: 'vertical-rl' }}
+                  >
+                    COUNTERFOIL — قومی اسمبلی
+                  </span>
+                  <div className="w-10 space-y-3">
+                    <div>
+                      <div className="h-8 border border-emerald-950/60 bg-white/40" />
+                      <p className="mt-1 text-[7px] font-bold text-center leading-tight">Elector No.</p>
+                    </div>
+                    <div>
+                      <div className="h-10 border border-emerald-950/60 bg-white/40" />
+                      <p className="mt-1 text-[7px] font-bold text-center leading-tight">Thumb Impression</p>
+                    </div>
+                  </div>
+                  <span
+                    className="text-[9px] font-bold text-emerald-950/70"
+                    style={{ writingMode: 'vertical-rl' }}
+                  >
+                    No. 042127
+                  </span>
+                </div>
 
-                        {/* Candidate Name */}
-                        <div className="flex-1 truncate">
-                          <h3
-                            className={`text-xl sm:text-2xl font-black tracking-tight leading-snug truncate ${
-                              isLight ? 'text-blue-950' : 'text-white'
-                            }`}
-                          >
-                            {getLocalizedCandidateName(candidate.name, isUrdu)}
-                          </h3>
-                        </div>
+                {/* MAIN PAPER */}
+                <div className="flex-1 min-w-0 p-4 sm:p-6">
+                  {/* HEADER */}
+                  <div className="text-center border-b-2 border-emerald-950/80 pb-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="w-20 text-left">
+                        <p className="text-[8px] sm:text-[9px] font-black uppercase tracking-wide">Serial No.</p>
+                        <p className="text-xs sm:text-sm font-black border border-emerald-950/70 bg-white/50 px-1.5 py-0.5 inline-block">
+                          042127
+                        </p>
                       </div>
-
-                      {/* Right: Stamp Button / Target */}
-                      <div
-                        className={`px-3.5 py-3 rounded-2xl border-2 flex items-center space-x-1.5 transition-all shrink-0 ${
-                          isSelected
-                            ? 'bg-emerald-600 border-emerald-400 text-white shadow-lg animate-pulse'
-                            : isLight
-                            ? 'border-blue-300 bg-blue-50 text-blue-800 hover:bg-blue-100'
-                            : 'border-slate-700 bg-slate-950 text-slate-300 hover:border-blue-500'
-                        }`}
-                      >
-                        <Stamp
-                          className={`w-5 h-5 sm:w-6 sm:h-6 ${
-                            isSelected ? 'text-white animate-bounce' : 'text-blue-600 dark:text-blue-400'
-                          }`}
-                        />
-                        <span className="text-xs sm:text-sm font-black">
-                          {isSelected ? (isUrdu ? 'منتخب' : 'Stamped') : (isUrdu ? 'مہر لگائیں' : 'Stamp')}
-                        </span>
+                      <div className="flex-1">
+                        <div className="mx-auto w-12 h-12 rounded-full border-2 border-emerald-950 flex items-center justify-center font-black text-sm tracking-widest">
+                          ECP
+                        </div>
+                        <h2 className="mt-1.5 text-sm sm:text-lg font-black tracking-wide uppercase">
+                          Election Commission of Pakistan
+                        </h2>
+                        <p className="text-base sm:text-xl font-black leading-tight">الیکشن کمیشن آف پاکستان</p>
+                      </div>
+                      <div className="w-20 text-right">
+                        <p className="text-[8px] sm:text-[9px] font-black uppercase tracking-wide">Nine-Matrix Seal</p>
+                        <div className="inline-grid grid-cols-3 gap-1 border border-emerald-950/70 bg-white/50 p-1.5">
+                          {Array.from({ length: 9 }).map((_, i) => (
+                            <span key={i} className="w-1.5 h-1.5 rounded-full bg-emerald-950" />
+                          ))}
+                        </div>
                       </div>
                     </div>
-                  );
-                })}
+                    <div className="mt-3 bg-emerald-950 text-[#dcefd9] py-1.5 px-3">
+                      <p className="text-lg sm:text-2xl font-black tracking-[0.2em]">BALLOT PAPER</p>
+                      <p className="text-sm sm:text-lg font-black leading-tight">بیلٹ پیپر — قومی اسمبلی</p>
+                    </div>
+                    <div className="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] sm:text-xs font-black uppercase">
+                      <span>Constituency: {constituencyLabel}</span>
+                      <span>{pollingStationLabel}</span>
+                    </div>
+                    <p className="mt-1 text-[10px] sm:text-[11px] font-bold">
+                      Stamp ONE box only — صرف ایک خانے میں مہر لگائیں
+                    </p>
+                  </div>
+
+                  {/* OFFICIAL MARKS */}
+                  <div className="mt-3 grid grid-cols-2 gap-3 text-[9px] sm:text-[10px] font-bold">
+                    <div className="border border-emerald-950/60 bg-white/40 px-2 py-1.5">
+                      Official Code Mark: <span className="font-black">ECP-NA127-42</span>
+                    </div>
+                    <div className="border border-emerald-950/60 bg-white/40 px-2 py-1.5 flex items-end justify-between gap-2">
+                      <span>Assistant Presiding Officer</span>
+                      <span className="font-serif italic text-xs sm:text-sm border-b border-emerald-950/60 px-2">
+                        A. Presiding Officer
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* COLUMN HEADINGS */}
+                  <div className="mt-4 grid grid-cols-[2.2rem_minmax(0,1fr)_4.8rem_4.8rem] sm:grid-cols-[3rem_minmax(0,1fr)_7rem_7rem] border-2 border-emerald-950/90 bg-emerald-950/[0.08] text-[9px] sm:text-[11px] font-black uppercase">
+                    <div className="px-1 py-2 text-center border-r border-emerald-950/60">S. No.</div>
+                    <div className="px-2 py-2 border-r border-emerald-950/60">Candidate — امیدوار</div>
+                    <div className="px-1 py-2 text-center border-r border-emerald-950/60">Symbol — نشان</div>
+                    <div className="px-1 py-2 text-center">Stamp — مہر</div>
+                  </div>
+
+                  {/* CANDIDATE ROWS — name + symbol only, as printed on a real paper */}
+                  <div className="border-2 border-t-0 border-emerald-950/90">
+                    {(Array.isArray(candidates) ? candidates : []).map((candidate, index) => {
+                      const isSelected = selectedChoice === candidate.name;
+                      const urduName = getLocalizedCandidateName(candidate.name, true);
+                      const urduParty = getLocalizedPartyName(candidate.party, true);
+                      const urduSymbol = getLocalizedSymbolName(candidate.sign_name, true);
+                      const symbolHasUrdu = /[؀-ۿ]/.test(candidate.sign_name);
+
+                      return (
+                        <div
+                          key={candidate.id}
+                          id={`ballot-candidate-${candidate.id}`}
+                          onClick={() => handleSelectChoice(candidate.name)}
+                          className={`grid grid-cols-[2.2rem_minmax(0,1fr)_4.8rem_4.8rem] sm:grid-cols-[3rem_minmax(0,1fr)_7rem_7rem] items-stretch cursor-pointer transition-colors ${
+                            index > 0 ? 'border-t border-emerald-950/70' : ''
+                          } ${isSelected ? 'bg-emerald-200/80' : 'bg-white/35 hover:bg-white/60'}`}
+                        >
+                          <div className="flex items-center justify-center border-r border-emerald-950/60 font-black text-sm sm:text-base">
+                            {index + 1}
+                          </div>
+
+                          <div className="px-2 sm:px-3 py-2.5 border-r border-emerald-950/60 min-w-0">
+                            <h3 className="text-base sm:text-xl font-black leading-snug truncate">
+                              {candidate.name}
+                            </h3>
+                            {urduName !== candidate.name && (
+                              <p className="text-sm sm:text-lg font-bold leading-snug truncate">{urduName}</p>
+                            )}
+                            <p className="text-[10px] sm:text-xs font-bold text-slate-700 truncate">
+                              {candidate.party}
+                              {urduParty !== candidate.party ? ` — ${urduParty}` : ''}
+                            </p>
+                          </div>
+
+                          <div className="flex flex-col items-center justify-center border-r border-emerald-950/60 px-1 py-2">
+                            <div className="w-10 h-10 sm:w-14 sm:h-14 flex items-center justify-center">
+                              {renderSymbolIcon(
+                                candidate.sign_icon || candidate.sign_name,
+                                'w-9 h-9 sm:w-12 sm:h-12 text-slate-950',
+                                candidate.sign_image_url
+                              )}
+                            </div>
+                            <p className="text-[8px] sm:text-[10px] font-black text-center leading-tight">
+                              {candidate.sign_name}
+                            </p>
+                            {!symbolHasUrdu && urduSymbol !== candidate.sign_name && (
+                              <p className="text-[8px] sm:text-[10px] font-bold text-center leading-tight">
+                                {urduSymbol}
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="flex items-center justify-center p-1.5 sm:p-2">
+                            <div
+                              className={`w-full h-full min-h-[3.8rem] border-2 border-dashed flex flex-col items-center justify-center gap-0.5 ${
+                                isSelected
+                                  ? 'border-blue-900 bg-blue-100/50'
+                                  : 'border-emerald-950/50'
+                              }`}
+                            >
+                              {isSelected ? (
+                                <div className="flex flex-col items-center justify-center border-[3px] border-blue-900 text-blue-900 rounded-full w-14 h-14 sm:w-[4.2rem] sm:h-[4.2rem] -rotate-12 bg-white/60">
+                                  <Stamp className="w-5 h-5 sm:w-6 sm:h-6" />
+                                  <span className="text-[8px] sm:text-[9px] font-black tracking-widest">VOTED</span>
+                                </div>
+                              ) : (
+                                <>
+                                  <Stamp className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-950/40" />
+                                  <span className="text-[7px] sm:text-[8px] font-black tracking-widest text-emerald-950/50 text-center leading-tight">
+                                    STAMP HERE
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {candidates.length === 0 && (
+                      <p className="py-8 text-center text-sm font-black">
+                        No candidates on this ballot paper yet — the officer adds them in Admin.
+                      </p>
+                    )}
+                  </div>
+
+                  {/* FOOTER */}
+                  <div className="mt-3 border-t-2 border-dashed border-emerald-950/60 pt-2 flex flex-wrap items-center justify-between gap-2 text-[9px] sm:text-[10px] font-bold">
+                    <span>After stamping, fold the paper vertically and put it in the ballot box.</span>
+                    <span className="uppercase tracking-widest">Specimen for demonstration</span>
+                  </div>
+                </div>
               </div>
             </div>
           )}
