@@ -120,6 +120,50 @@ export function cosineSimilarity(a: number[], b: number[]): number {
   return denom === 0 ? 0 : dot / denom;
 }
 
+// ---------- one-time removal of the previously seeded dummy voters ----------
+// Awais decided voters must only be people the officer enrolls manually.
+// Early demo builds seeded six records with CNIC serials 0000001–0000006 and
+// names ending in "(Test)". Remove exactly those records, plus the single
+// anonymous ballot that belonged to the pre-voted dummy voter.
+const DUMMY_VOTER_CNICS = new Set([
+  '3520200000011',
+  '3520200000022',
+  '3520200000033',
+  '3520200000044',
+  '3520200000055',
+  '3520200000066',
+]);
+
+async function removeDummyVotersOnce(): Promise<void> {
+  if (await localMetaGet('dummyVotersRemoved')) return;
+  const voters = await localGetAll<any>('voters');
+  const ballots = await localGetAll<any>('ballots');
+  for (const voter of voters) {
+    const cnicDigits = String(voter.cnic || '').replace(/\D/g, '');
+    const isDummy =
+      DUMMY_VOTER_CNICS.has(cnicDigits) &&
+      typeof voter.name === 'string' &&
+      voter.name.trim().endsWith('(Test)');
+    if (!isDummy) continue;
+
+    if (voter.has_voted) {
+      const enrolledMs = Date.parse(voter.enrolled_at || '');
+      const seededBallot = ballots.find((ballot) => {
+        const castMs = Date.parse(ballot.cast_at || '');
+        return (
+          ballot.choice === 'Mian Tariq Mehmood Sharif' &&
+          Number.isFinite(enrolledMs) &&
+          Number.isFinite(castMs) &&
+          Math.abs(castMs - enrolledMs) <= 120000
+        );
+      });
+      if (seededBallot) await localDelete('ballots', seededBallot.id);
+    }
+    await localDelete('voters', voter.id);
+  }
+  await localMetaSet('dummyVotersRemoved', true);
+}
+
 // ---------- seeding ----------
 let seedPromise: Promise<void> | null = null;
 
@@ -127,17 +171,19 @@ export function ensureLocalSeeded(): Promise<void> {
   if (!seedPromise) {
     seedPromise = (async () => {
       const seeded = await localMetaGet('seeded');
-      if (seeded) return;
-      await localMetaSet('config', { ...DEFAULT_CONFIG });
-      await localMetaSet('threshold', DEFAULT_THRESHOLD);
-      const salt = randomHex(16);
-      await localMetaSet('pinSalt', salt);
-      await localMetaSet('pinHash', await hashPin(DEFAULT_PIN, salt));
-      const existingCandidates = await localGetAll('candidates');
-      if (existingCandidates.length === 0) {
-        for (const cand of DEFAULT_CANDIDATES) await localPut('candidates', { ...cand });
+      if (!seeded) {
+        await localMetaSet('config', { ...DEFAULT_CONFIG });
+        await localMetaSet('threshold', DEFAULT_THRESHOLD);
+        const salt = randomHex(16);
+        await localMetaSet('pinSalt', salt);
+        await localMetaSet('pinHash', await hashPin(DEFAULT_PIN, salt));
+        const existingCandidates = await localGetAll('candidates');
+        if (existingCandidates.length === 0) {
+          for (const cand of DEFAULT_CANDIDATES) await localPut('candidates', { ...cand });
+        }
+        await localMetaSet('seeded', true);
       }
-      await localMetaSet('seeded', true);
+      await removeDummyVotersOnce();
     })();
   }
   return seedPromise;

@@ -8,6 +8,7 @@
 // ============================================================
 
 import { handleLocalApi } from './localBackend';
+import { offlineStorage } from './offlineStorage';
 
 export type AppMode = 'device' | 'server';
 
@@ -29,6 +30,31 @@ export function setAppMode(mode: AppMode): void {
 
 export function isDeviceMode(): boolean {
   return getAppMode() === 'device';
+}
+
+const DUMMY_VOTER_CNICS = new Set([
+  '3520200000011',
+  '3520200000022',
+  '3520200000033',
+  '3520200000044',
+  '3520200000055',
+  '3520200000066',
+]);
+
+/** Remove the old dummy voters from the browser's offline cache as well. */
+export function removeCachedDummyVoters(): void {
+  try {
+    const cached = offlineStorage.getLocalVoters();
+    const kept = cached.filter((voter) => {
+      const cnicDigits = String(voter.cnic || '').replace(/\D/g, '');
+      return !(
+        DUMMY_VOTER_CNICS.has(cnicDigits) &&
+        typeof voter.name === 'string' &&
+        voter.name.trim().endsWith('(Test)')
+      );
+    });
+    if (kept.length !== cached.length) offlineStorage.saveVotersLocally(kept);
+  } catch {}
 }
 
 let installed = false;
