@@ -17,6 +17,7 @@ import {
 } from '../services/electoralSymbols';
 import { cyberSound } from '../services/soundEffects';
 import { useTheme } from '../context/ThemeContext';
+import { PORTRAIT_1, PORTRAIT_2, PORTRAIT_3, PORTRAIT_4, PORTRAIT_6, PORTRAIT_8 } from '../services/candidatePhotos';
 
 interface CandidateEditorModalProps {
   isOpen: boolean;
@@ -27,12 +28,12 @@ interface CandidateEditorModalProps {
 }
 
 const PRESET_PHOTOS = [
-  'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
+  PORTRAIT_3,
+  PORTRAIT_2,
+  PORTRAIT_8,
+  PORTRAIT_4,
+  PORTRAIT_6,
+  PORTRAIT_1,
 ];
 
 export const CandidateEditorModal: React.FC<CandidateEditorModalProps> = ({

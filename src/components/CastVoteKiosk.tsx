@@ -17,7 +17,7 @@ import { cyberSound } from '../services/soundEffects';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { usePWA } from '../hooks/usePWA';
-import { getAppMode, setAppMode, type AppMode } from '../services/deviceMode';
+import { getAppMode, setAppMode, isAppShell, type AppMode } from '../services/deviceMode';
 
 interface CastVoteKioskProps {
   onStartCastVote: () => void;
@@ -53,6 +53,7 @@ export const CastVoteKiosk: React.FC<CastVoteKioskProps> = ({
   const [showDevicePanel, setShowDevicePanel] = useState<boolean>(false);
   const [prepareMessage, setPrepareMessage] = useState<string | null>(null);
   const [appMode, setAppModeState] = useState<AppMode>(() => getAppMode());
+  const inShell = isAppShell();
 
   const isOfflineSavedVote =
     !!lastVoteRecordedMessage &&
@@ -291,7 +292,11 @@ export const CastVoteKiosk: React.FC<CastVoteKioskProps> = ({
         >
           <div className={`space-y-1.5 text-xs sm:text-sm font-semibold ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>
             <p>
-              {isAppCached || isInstalled
+              {inShell
+                ? isUrdu
+                  ? '✓ ایپ فائلیں ایپ کے اندر موجود ہیں — انٹرنیٹ کی ضرورت نہیں'
+                  : '✓ App files are built into the app — no internet needed'
+                : isAppCached || isInstalled
                 ? isUrdu
                   ? '✓ ایپ فائلیں محفوظ ہیں'
                   : '✓ App files saved'
@@ -314,6 +319,7 @@ export const CastVoteKiosk: React.FC<CastVoteKioskProps> = ({
             )}
           </div>
 
+          {!inShell && (
           <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
             <button
               type="button"
@@ -354,7 +360,9 @@ export const CastVoteKiosk: React.FC<CastVoteKioskProps> = ({
             </button>
           </div>
 
-          {!isOnline && (
+          )}
+
+          {!inShell && !isOnline && (
             <div className="mt-4 p-3 rounded-2xl bg-amber-500/10 border border-amber-500/40 text-amber-600 dark:text-amber-300 text-xs sm:text-sm font-bold flex gap-2.5">
               <Info className="w-5 h-5 shrink-0" />
               <span>
@@ -365,13 +373,20 @@ export const CastVoteKiosk: React.FC<CastVoteKioskProps> = ({
             </div>
           )}
 
-          {prepareMessage && (
+          {!inShell && prepareMessage && (
             <div className="mt-4 p-3 rounded-2xl bg-blue-500/10 border border-blue-500/40 text-blue-700 dark:text-blue-300 text-xs sm:text-sm font-bold">
               {prepareMessage}
             </div>
           )}
 
-          {/* MODE SWITCH — one quiet row */}
+          {/* MODE SWITCH — one quiet row (hidden in the app shells: the app always runs on-device) */}
+          {inShell ? (
+            <div className={`mt-4 pt-4 border-t ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
+              <p className={`text-xs sm:text-sm font-bold ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>
+                {isUrdu ? 'ایپ موڈ: سب کچھ اسی ڈیوائس پر چلتا ہے' : 'App mode: everything runs on this device'}
+              </p>
+            </div>
+          ) : (
           <div className={`mt-4 pt-4 border-t flex flex-wrap items-center justify-between gap-3 ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
             <p className={`text-xs sm:text-sm font-bold ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>
               {appMode === 'device'
@@ -400,6 +415,7 @@ export const CastVoteKiosk: React.FC<CastVoteKioskProps> = ({
                 : 'Switch to Device Mode'}
             </button>
           </div>
+          )}
 
           <p className={`mt-3 text-[11px] sm:text-xs font-semibold leading-relaxed ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
             {appMode === 'device'

@@ -270,7 +270,7 @@ export const BallotView: React.FC<BallotViewProps> = ({
                 cyberSound.playClick();
                 onCancel();
               }}
-              className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl flex items-center space-x-2 cursor-pointer font-bold text-xs sm:text-sm transition border shadow-sm ${
+              className={`px-4 min-h-[44px] py-2 rounded-2xl flex items-center space-x-2 cursor-pointer font-bold text-xs sm:text-sm transition border shadow-sm ${
                 isLight
                   ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300'
                   : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
@@ -529,7 +529,7 @@ export const BallotView: React.FC<BallotViewProps> = ({
                     setSelectedChoice(null);
                   }}
                   disabled={isSubmitting}
-                  className={`px-4 py-3 rounded-2xl border flex items-center space-x-1.5 font-bold text-xs sm:text-sm cursor-pointer transition ${
+                  className={`px-4 min-h-[48px] py-3 rounded-2xl border flex items-center space-x-1.5 font-bold text-xs sm:text-sm cursor-pointer transition ${
                     isLight
                       ? 'bg-rose-50 hover:bg-rose-100 border-rose-300 text-rose-800'
                       : 'bg-rose-950/60 hover:bg-rose-900/80 border-rose-800 text-rose-300'

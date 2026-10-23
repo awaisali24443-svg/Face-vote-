@@ -124,9 +124,15 @@ router.get('/config', async (_req: Request, res: Response) => {
   try {
     const electionConfig = await getElectionConfig();
     const { adminPin: _adminPin, ...publicConfig } = electionConfig;
+    // Public roll counts (numbers only — no voter data) so the kiosk can
+    // warn "no voters registered yet" instead of opening a camera that
+    // can never match anyone.
+    const allVoters = await getAllVoters();
     res.json({
       threshold: matchingThreshold,
       ...publicConfig,
+      registered_voters: allVoters.length,
+      approved_voters: allVoters.filter((v) => v.approval_status === 'approved').length,
     });
   } catch (err: any) {
     res.status(500).json({ error: err.message || 'Failed to fetch config' });

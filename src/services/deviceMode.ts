@@ -32,6 +32,25 @@ export function isDeviceMode(): boolean {
   return getAppMode() === 'device';
 }
 
+/**
+ * True when the app runs inside one of our own shells — the Android app
+ * (served from https://facevote.app by the native wrapper) or the Windows
+ * Electron app — instead of a normal browser tab. Web-only controls
+ * (Install App, Prepare This Device, Server Mode) are hidden in shells:
+ * everything is already built in and on-device there.
+ */
+export function isAppShell(): boolean {
+  try {
+    const ua = window.navigator.userAgent || '';
+    if (ua.includes('Electron')) return true;
+    if (ua.includes('; wv)') || ua.includes('; wv;')) return true;
+    if (window.location.origin === 'https://facevote.app') return true;
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 const DUMMY_VOTER_CNICS = new Set([
   '3520200000011',
   '3520200000022',

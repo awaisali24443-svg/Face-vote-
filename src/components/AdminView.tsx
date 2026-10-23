@@ -275,7 +275,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ initialSubTab = 'enrollmen
             <div className="space-y-2 pt-2">
               <button
                 type="submit"
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white font-bold text-xs uppercase tracking-wider shadow-lg transition cursor-pointer flex items-center justify-center space-x-2"
+                className="w-full min-h-[52px] py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white font-bold text-sm uppercase tracking-wider shadow-lg transition cursor-pointer flex items-center justify-center space-x-2"
               >
                 <Key className="w-4 h-4" />
                 <span>{isUrdu ? 'پن تصدیق کریں اور انلاک کریں' : 'Verify Officer PIN & Unlock'}</span>

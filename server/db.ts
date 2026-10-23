@@ -2,6 +2,7 @@ import initSqlJs, { type Database } from 'sql.js';
 import fs from 'fs';
 import path from 'path';
 import { createHash } from 'crypto';
+import { PORTRAIT_1, PORTRAIT_2, PORTRAIT_3, PORTRAIT_4, PORTRAIT_5 } from '../src/services/candidatePhotos';
 
 const DB_DIR = path.resolve(process.cwd(), 'data');
 const DB_FILE = path.join(DB_DIR, 'facevote.sqlite');
@@ -105,7 +106,7 @@ const DEFAULT_CANDIDATES: CandidateRecord[] = [
     tagline: 'Empowering youth, judicial transparency, anti-corruption reforms, and citizen digital governance.',
     sign_name: 'Cricket Bat (بلہ)',
     sign_icon: 'bat',
-    photo_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
+    photo_url: PORTRAIT_1,
     display_order: 1,
     base_votes: 0,
     education: 'LLB (Hons), University of the Punjab',
@@ -121,7 +122,7 @@ const DEFAULT_CANDIDATES: CandidateRecord[] = [
     tagline: 'Economic growth corridors, national motorways, power infrastructure, and industrial revitalization.',
     sign_name: 'Tiger (شیر)',
     sign_icon: 'tiger',
-    photo_url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80',
+    photo_url: PORTRAIT_2,
     display_order: 2,
     base_votes: 0,
     education: 'MBA, Lahore University of Management Sciences',
@@ -137,7 +138,7 @@ const DEFAULT_CANDIDATES: CandidateRecord[] = [
     tagline: 'Social security nets, Benazir Income Support, healthcare access for rural communities, and labor rights.',
     sign_name: 'Arrow (تیر)',
     sign_icon: 'arrow',
-    photo_url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80',
+    photo_url: PORTRAIT_3,
     display_order: 3,
     base_votes: 0,
     education: 'MBBS, King Edward Medical University',
@@ -153,7 +154,7 @@ const DEFAULT_CANDIDATES: CandidateRecord[] = [
     tagline: 'Honest municipal leadership, clean drinking water filtration, and youth IT training programs.',
     sign_name: 'Scale of Justice (ترازو)',
     sign_icon: 'scale',
-    photo_url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&auto=format&fit=crop&q=80',
+    photo_url: PORTRAIT_4,
     display_order: 4,
     base_votes: 0,
     education: 'MA Islamic Studies, University of Karachi',
@@ -169,7 +170,7 @@ const DEFAULT_CANDIDATES: CandidateRecord[] = [
     tagline: 'Grassroots constituency representation, IT innovation hubs, and community welfare in NA-127.',
     sign_name: 'Eagle of Iqbal (شاہین)',
     sign_icon: 'eagle',
-    photo_url: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&auto=format&fit=crop&q=80',
+    photo_url: PORTRAIT_5,
     display_order: 5,
     base_votes: 0,
     education: 'BS Computer Science, GCMS Shabqadar',

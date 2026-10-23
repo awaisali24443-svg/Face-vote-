@@ -26,6 +26,7 @@ import {
   localMetaSet,
   localPut,
 } from './localDb';
+import { PORTRAIT_1, PORTRAIT_2, PORTRAIT_3, PORTRAIT_4, PORTRAIT_5, CANDIDATE_PHOTOS } from './candidatePhotos';
 
 export interface LocalApiResult {
   status: number;
@@ -49,11 +50,11 @@ const DEFAULT_PIN = '2026';
 const DEFAULT_THRESHOLD = 0.82;
 
 const DEFAULT_CANDIDATES = [
-  { id: 'cand-1', name: 'Barrister Muhammad Ali Khan', party: 'Pakistan Tehreek-e-Insaf (PTI)', tagline: 'Empowering youth, judicial transparency, anti-corruption reforms, and citizen digital governance.', sign_name: 'Cricket Bat (بلہ)', sign_icon: 'bat', photo_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80', display_order: 1, base_votes: 0, education: 'LLB (Hons), University of the Punjab', profession: 'Advocate — Barrister-at-Law', age: 47, hometown: 'Lahore, Punjab', experience: 'Former MNA (2018–2023); chaired the Standing Committee on Law & Justice' },
-  { id: 'cand-2', name: 'Mian Tariq Mehmood Sharif', party: 'Pakistan Muslim League - Nawaz (PML-N)', tagline: 'Economic growth corridors, national motorways, power infrastructure, and industrial revitalization.', sign_name: 'Tiger (شیر)', sign_icon: 'tiger', photo_url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80', display_order: 2, base_votes: 0, education: 'MBA, Lahore University of Management Sciences', profession: 'Industrialist / Businessman', age: 55, hometown: 'Lahore, Punjab', experience: 'Two-time MPA; former Provincial Minister for Industries & Trade' },
-  { id: 'cand-3', name: 'Syeda Fatima Zahra Gilani', party: 'Pakistan Peoples Party Parliamentarians (PPPP)', tagline: 'Social security nets, Benazir Income Support, healthcare access for rural communities, and labor rights.', sign_name: 'Arrow (تیر)', sign_icon: 'arrow', photo_url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80', display_order: 3, base_votes: 0, education: 'MBBS, King Edward Medical University', profession: 'Medical Doctor & Social Worker', age: 44, hometown: 'Multan, Punjab', experience: 'Director, Fatima Zahra Welfare Hospital; former Senator' },
-  { id: 'cand-4', name: 'Hafiz Asad Qureshi', party: 'Jamaat-e-Islami (JI)', tagline: 'Honest municipal leadership, clean drinking water filtration, and youth IT training programs.', sign_name: 'Scale of Justice (ترازو)', sign_icon: 'scale', photo_url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&auto=format&fit=crop&q=80', display_order: 4, base_votes: 0, education: 'MA Islamic Studies, University of Karachi', profession: 'Religious Scholar & Educationist', age: 52, hometown: 'Lahore, Punjab', experience: 'Runs a network of schools and free IT training centres' },
-  { id: 'cand-5', name: 'Mr. Awais Ali', party: 'Independent Candidate (آزاد امیدوار)', tagline: 'Grassroots constituency representation, IT innovation hubs, and community welfare in NA-127.', sign_name: 'Eagle of Iqbal (شاہین)', sign_icon: 'eagle', photo_url: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&auto=format&fit=crop&q=80', display_order: 5, base_votes: 0, education: 'BS Computer Science, GCMS Shabqadar', profession: 'Student & Software Developer', hometown: 'Shabqadar, Khyber Pakhtunkhwa', experience: 'Built the FuelRun expo demo and the WAIS Player app' },
+  { id: 'cand-1', name: 'Barrister Muhammad Ali Khan', party: 'Pakistan Tehreek-e-Insaf (PTI)', tagline: 'Empowering youth, judicial transparency, anti-corruption reforms, and citizen digital governance.', sign_name: 'Cricket Bat (بلہ)', sign_icon: 'bat', photo_url: PORTRAIT_1, display_order: 1, base_votes: 0, education: 'LLB (Hons), University of the Punjab', profession: 'Advocate — Barrister-at-Law', age: 47, hometown: 'Lahore, Punjab', experience: 'Former MNA (2018–2023); chaired the Standing Committee on Law & Justice' },
+  { id: 'cand-2', name: 'Mian Tariq Mehmood Sharif', party: 'Pakistan Muslim League - Nawaz (PML-N)', tagline: 'Economic growth corridors, national motorways, power infrastructure, and industrial revitalization.', sign_name: 'Tiger (شیر)', sign_icon: 'tiger', photo_url: PORTRAIT_2, display_order: 2, base_votes: 0, education: 'MBA, Lahore University of Management Sciences', profession: 'Industrialist / Businessman', age: 55, hometown: 'Lahore, Punjab', experience: 'Two-time MPA; former Provincial Minister for Industries & Trade' },
+  { id: 'cand-3', name: 'Syeda Fatima Zahra Gilani', party: 'Pakistan Peoples Party Parliamentarians (PPPP)', tagline: 'Social security nets, Benazir Income Support, healthcare access for rural communities, and labor rights.', sign_name: 'Arrow (تیر)', sign_icon: 'arrow', photo_url: PORTRAIT_3, display_order: 3, base_votes: 0, education: 'MBBS, King Edward Medical University', profession: 'Medical Doctor & Social Worker', age: 44, hometown: 'Multan, Punjab', experience: 'Director, Fatima Zahra Welfare Hospital; former Senator' },
+  { id: 'cand-4', name: 'Hafiz Asad Qureshi', party: 'Jamaat-e-Islami (JI)', tagline: 'Honest municipal leadership, clean drinking water filtration, and youth IT training programs.', sign_name: 'Scale of Justice (ترازو)', sign_icon: 'scale', photo_url: PORTRAIT_4, display_order: 4, base_votes: 0, education: 'MA Islamic Studies, University of Karachi', profession: 'Religious Scholar & Educationist', age: 52, hometown: 'Lahore, Punjab', experience: 'Runs a network of schools and free IT training centres' },
+  { id: 'cand-5', name: 'Mr. Awais Ali', party: 'Independent Candidate (آزاد امیدوار)', tagline: 'Grassroots constituency representation, IT innovation hubs, and community welfare in NA-127.', sign_name: 'Eagle of Iqbal (شاہین)', sign_icon: 'eagle', photo_url: PORTRAIT_5, display_order: 5, base_votes: 0, education: 'BS Computer Science, GCMS Shabqadar', profession: 'Student & Software Developer', hometown: 'Shabqadar, Khyber Pakhtunkhwa', experience: 'Built the FuelRun expo demo and the WAIS Player app' },
 ];
 
 // ---------- crypto helpers ----------
@@ -184,9 +185,26 @@ export function ensureLocalSeeded(): Promise<void> {
         await localMetaSet('seeded', true);
       }
       await removeDummyVotersOnce();
+      await localizeSeedCandidatePhotosOnce();
     })();
   }
   return seedPromise;
+}
+
+// Older installs seeded candidate photos as remote CDN links, which break
+// with no internet. Swap the 5 prebuilt candidates' photos for the bundled
+// portraits exactly once; officer-edited photos are never touched.
+async function localizeSeedCandidatePhotosOnce(): Promise<void> {
+  if (await localMetaGet('candidatePhotosLocalized')) return;
+  const candidates = await localGetAll<any>('candidates');
+  for (const cand of candidates) {
+    const bundled = CANDIDATE_PHOTOS[cand.id];
+    if (bundled && typeof cand.photo_url === 'string' && cand.photo_url.startsWith('https://images.unsplash.com')) {
+      cand.photo_url = bundled;
+      await localPut('candidates', cand);
+    }
+  }
+  await localMetaSet('candidatePhotosLocalized', true);
 }
 
 async function getConfig(): Promise<any> {
@@ -255,7 +273,15 @@ export async function handleLocalApi(
     }
     if (method === 'GET' && path === '/config') {
       const config = await getConfig();
-      return ok({ threshold: await getThreshold(), ...config });
+      // Public roll counts (numbers only) — same contract as the server,
+      // so the kiosk can warn before opening a camera that cannot match.
+      const voters = await getVoters();
+      return ok({
+        threshold: await getThreshold(),
+        ...config,
+        registered_voters: voters.length,
+        approved_voters: voters.filter((v) => v.approval_status === 'approved').length,
+      });
     }
     if (method === 'GET' && path === '/candidates') {
       return ok({ candidates: await getCandidatesSorted() });

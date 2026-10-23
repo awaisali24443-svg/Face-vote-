@@ -1,3 +1,4 @@
+import { PORTRAIT_1, PORTRAIT_2, PORTRAIT_4, PORTRAIT_6, PORTRAIT_7 } from './candidatePhotos';
 export interface ParsedCNIC {
   cnic: string;
   name: string;
@@ -231,7 +232,7 @@ export const SAMPLE_CNIC_PRESETS = [
     pollingStation: 'Govt. Model High School Model Town, Booth #01',
     electoralBlockCode: '352010104',
     familyTreeNo: 'FT-9482715',
-    photo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&fit=crop&q=80',
+    photo: PORTRAIT_1,
   },
   {
     cnic: '42101-5829104-6',
@@ -246,7 +247,7 @@ export const SAMPLE_CNIC_PRESETS = [
     pollingStation: 'Sir Syed Govt. Girls Degree College, Nazimabad',
     electoralBlockCode: '421010802',
     familyTreeNo: 'FT-5829104',
-    photo: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&fit=crop&q=80',
+    photo: PORTRAIT_6,
   },
   {
     cnic: '61101-7294018-1',
@@ -261,7 +262,7 @@ export const SAMPLE_CNIC_PRESETS = [
     pollingStation: 'Islamabad College for Boys G-6/3, Hall A',
     electoralBlockCode: '611010201',
     familyTreeNo: 'FT-7294018',
-    photo: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&fit=crop&q=80',
+    photo: PORTRAIT_2,
   },
   {
     cnic: '17301-3829105-3',
@@ -276,7 +277,7 @@ export const SAMPLE_CNIC_PRESETS = [
     pollingStation: 'Edwardes College Hall, Peshawar Cantt',
     electoralBlockCode: '173010503',
     familyTreeNo: 'FT-3829105',
-    photo: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&fit=crop&q=80',
+    photo: PORTRAIT_4,
   },
   {
     cnic: '38403-1928475-2',
@@ -291,7 +292,7 @@ export const SAMPLE_CNIC_PRESETS = [
     pollingStation: 'Govt. High School No. 1 Sargodha, Room 4',
     electoralBlockCode: '384030401',
     familyTreeNo: 'FT-1928475',
-    photo: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&fit=crop&q=80',
+    photo: PORTRAIT_7,
   },
 ];
 

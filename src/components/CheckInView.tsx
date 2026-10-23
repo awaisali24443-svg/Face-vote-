@@ -89,6 +89,26 @@ export const CheckInView: React.FC<CheckInViewProps> = ({
   const { isLight } = useTheme();
   const { isUrdu } = useLanguage();
   const [isKioskMode, setIsKioskMode] = useState<boolean>(true);
+  // Public roll counts from /api/config — used to stop the camera opening
+  // when nobody can possibly match (empty or unapproved voter roll).
+  const [rollCounts, setRollCounts] = useState<{ registered: number; approved: number } | null>(null);
+  const [showNoVoters, setShowNoVoters] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!isKioskMode) return;
+    let cancelled = false;
+    fetch('/api/config')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data && typeof data.approved_voters === 'number') {
+          setRollCounts({ registered: data.registered_voters ?? 0, approved: data.approved_voters });
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [isKioskMode]);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -437,9 +457,66 @@ export const CheckInView: React.FC<CheckInViewProps> = ({
 
   // If in Kiosk Mode, show main kiosk landing card
   if (isKioskMode) {
+    // Empty-roll guard: no approved voters = nobody can cast a vote yet.
+    // Explain it plainly instead of opening a camera that can never match.
+    if (showNoVoters) {
+      return (
+        <div className="w-full max-w-xl mx-auto px-3 sm:px-6 py-6">
+          <div
+            className={`rounded-[28px] border shadow-xl p-6 sm:p-8 text-center ${
+              isLight ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-800'
+            }`}
+          >
+            <div className="mx-auto w-16 h-16 rounded-full bg-amber-500/15 text-amber-500 flex items-center justify-center mb-4">
+              <UserX className="w-8 h-8" />
+            </div>
+            <h2 className={`text-xl sm:text-2xl font-black ${isLight ? 'text-slate-900' : 'text-white'}`}>
+              {isUrdu ? 'ابھی کوئی ووٹر رجسٹرڈ نہیں ہے' : 'No voters registered yet'}
+            </h2>
+            <p className={`mt-3 text-sm sm:text-base leading-relaxed ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>
+              {isUrdu
+                ? 'ووٹنگ تب ہی شروع ہو سکتی ہے جب افسر پہلے ووٹرز کو رجسٹر اور منظور کرے۔ ایڈمن کھولیں، ووٹر شامل کریں، پھر اسے منظور کریں۔'
+                : 'Voting can only start after the election officer registers voters and approves them. Open Admin, enroll a voter, then approve them in the Voters list.'}
+            </p>
+            <button
+              onClick={() => {
+                cyberSound.playClick();
+                setShowNoVoters(false);
+                onGoToEnroll();
+              }}
+              className="mt-6 w-full min-h-[56px] px-6 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-base sm:text-lg shadow-lg flex items-center justify-center gap-2 transition cursor-pointer"
+            >
+              <UserPlus className="w-6 h-6" />
+              <span>{isUrdu ? 'ایڈمن — ووٹر رجسٹر کریں' : 'Open Admin — Register Voters'}</span>
+            </button>
+            <button
+              onClick={() => {
+                cyberSound.playClick();
+                setShowNoVoters(false);
+              }}
+              className={`mt-3 w-full min-h-[52px] px-6 rounded-2xl border font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition cursor-pointer ${
+                isLight
+                  ? 'border-slate-300 text-slate-700 hover:bg-slate-100'
+                  : 'border-slate-700 text-slate-200 hover:bg-slate-800'
+              }`}
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span>{isUrdu ? 'واپس' : 'Back'}</span>
+            </button>
+          </div>
+        </div>
+      );
+    }
     return (
       <CastVoteKiosk
-        onStartCastVote={() => setIsKioskMode(false)}
+        onStartCastVote={() => {
+          if (rollCounts && rollCounts.approved === 0) {
+            cyberSound.playClick();
+            setShowNoVoters(true);
+            return;
+          }
+          setIsKioskMode(false);
+        }}
         onGoToEnroll={onGoToEnroll}
         onViewResults={onViewResults}
         lastVoteRecordedMessage={lastVoteRecordedMessage}

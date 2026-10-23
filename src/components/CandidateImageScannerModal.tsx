@@ -19,12 +19,14 @@ import { cyberSound } from '../services/soundEffects';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { adminHeaders } from '../services/adminAuth';
+import { isDeviceMode } from '../services/deviceMode';
 import {
   getLocalizedCandidateName,
   getLocalizedPartyName,
   getLocalizedSymbolName,
   getLocalizedTagline,
 } from '../services/urduCandidateHelper';
+import { PORTRAIT_1, PORTRAIT_2, PORTRAIT_7 } from '../services/candidatePhotos';
 
 interface CandidateImageScannerModalProps {
   isOpen: boolean;
@@ -119,7 +121,7 @@ export const CandidateImageScannerModal: React.FC<CandidateImageScannerModalProp
   const samplePosters = [
     {
       title: 'PTI Election Poster (Cricket Bat)',
-      url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=500&fit=crop&q=80',
+      url: PORTRAIT_7,
       data: {
         name: 'Barrister Muhammad Ali Khan',
         nameUrdu: 'بیرسٹر محمد علی خان',
@@ -134,7 +136,7 @@ export const CandidateImageScannerModal: React.FC<CandidateImageScannerModalProp
     },
     {
       title: 'PML-N Campaign Banner (Tiger)',
-      url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&fit=crop&q=80',
+      url: PORTRAIT_1,
       data: {
         name: 'Mian Tariq Mehmood Sharif',
         nameUrdu: 'میاں طارق محمود شریف',
@@ -149,7 +151,7 @@ export const CandidateImageScannerModal: React.FC<CandidateImageScannerModalProp
     },
     {
       title: 'Independent Candidate Banner (Eagle)',
-      url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=500&fit=crop&q=80',
+      url: PORTRAIT_2,
       data: {
         name: 'Hafiz Asad Qureshi',
         nameUrdu: 'حافظ اسعد قریشی',
@@ -252,6 +254,11 @@ export const CandidateImageScannerModal: React.FC<CandidateImageScannerModalProp
                 <div className="text-base font-bold uppercase tracking-wider mb-1">
                   UPLOAD ELECTION POSTER, NOMINATION FORM, OR FLYER
                 </div>
+                {isDeviceMode() && (
+                  <p className="text-xs font-bold text-amber-500 bg-amber-500/10 border border-amber-500/40 rounded-xl px-3 py-2.5 max-w-md mb-4">
+                    Device Mode: AI scanning is off — it needs the online server. Please add the candidate with the editor form instead; that works fully offline.
+                  </p>
+                )}
                 <p className="text-xs text-slate-400 max-w-md mb-5">
                   Gemini AI Vision will automatically detect Candidate Name, Urdu Script, Political Party, Electoral Symbol (Bat, Tiger, Scale, Eagle, etc.), and Campaign Manifesto.
                 </p>
