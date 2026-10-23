@@ -371,19 +371,39 @@ export async function getDb(): Promise<Database> {
     }
 
     // Seed default election configs ONLY if missing. INSERT OR IGNORE: officer
-    // changes (title, ballot lock, auto-approve, PIN) must survive a restart —
-    // the previous INSERT OR REPLACE silently reset the admin PIN to 2026 on
-    // every boot. autoApprove defaults OFF: new voters stay 'pending' until an
-    // officer approves them. The default PIN must be changed by the officer.
+    // changes (title, ballot lock, PIN) must survive a restart — the previous
+    // INSERT OR REPLACE silently reset the admin PIN to 2026 on every boot.
+    // autoApprove defaults ON and enrollment always approves immediately:
+    // registration by the officer IS the approval (there is no separate
+    // approval step). The default PIN must be changed by the officer.
     const configKeys = [
       ['title', 'ELECTION COMMISSION OF PAKISTAN // GENERAL ELECTION 2026'],
       ['subtitle', 'Constituency NA-127 (Lahore-XI) // Biometric Polling Station #42'],
       ['isBallotLocked', '0'],
-      ['autoApprove', '0'],
+      ['autoApprove', '1'],
       ['adminPin', '2026'],
     ];
     for (const [key, val] of configKeys) {
       dbInstance.run(`INSERT OR IGNORE INTO election_config (key, value) VALUES (?, ?)`, [key, val]);
+    }
+
+    // One-time migration: the approval step was removed, so approve every
+    // voter an older build left stuck in 'pending' (they were enrolled by
+    // an officer; the app never had an approve button to free them).
+    const migRes = dbInstance.exec(
+      `SELECT value FROM election_config WHERE key = 'pendingAutoApprovedV1'`
+    );
+    const migrated = migRes.length > 0 && migRes[0].values.length > 0;
+    if (!migrated) {
+      dbInstance.run(
+        `UPDATE voters SET approval_status = 'approved', approved_at = COALESCE(approved_at, enrolled_at) WHERE approval_status = 'pending'`
+      );
+      dbInstance.run(
+        `INSERT OR REPLACE INTO election_config (key, value) VALUES ('pendingAutoApprovedV1', '1')`
+      );
+      dbInstance.run(
+        `INSERT OR REPLACE INTO election_config (key, value) VALUES ('autoApprove', '1')`
+      );
     }
 
     // No sample voters are seeded. The electoral roll must contain only
@@ -518,14 +538,11 @@ export async function enrollVoter(
   const enrolledAt = new Date().toISOString();
   const embeddingJson = JSON.stringify(embedding);
 
-  // Approval follows the election config: auto-approve ONLY when the officer
-  // has explicitly enabled autoApprove. Otherwise the voter stays 'pending'
-  // until approved at the Admin Approval Desk.
-  const configRes = db.exec(`SELECT value FROM election_config WHERE key = 'autoApprove'`);
-  const autoApprove =
-    configRes.length && configRes[0].values.length ? configRes[0].values[0][0] === '1' : false;
-  const initialStatus: 'pending' | 'approved' = autoApprove ? 'approved' : 'pending';
-  const approvedAt = autoApprove ? enrolledAt : null;
+  // Registration IS the approval: enrollment requires the officer's admin
+  // PIN, so a newly registered voter is approved immediately and can vote
+  // straight away — there is no separate approval step.
+  const initialStatus: 'approved' = 'approved';
+  const approvedAt = enrolledAt;
 
   db.run(
     `INSERT INTO voters (

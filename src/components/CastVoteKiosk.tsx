@@ -421,7 +421,7 @@ export const CastVoteKiosk: React.FC<CastVoteKioskProps> = ({
             {appMode === 'device'
               ? isUrdu
                 ? 'ڈیوائس موڈ میں رجسٹریشن، منظوری، ووٹ اور نتائج سب اسی ڈیوائس پر مکمل ہوتے ہیں۔ ووٹر صرف افسر درج کرتا ہے۔'
-                : 'In Device Mode, enrollment, approval, voting and results all complete on this device. Voters are added only by the officer.'
+                : 'In Device Mode, enrollment, voting and results all complete on this device. Voters are added only by the officer, and they can vote straight away.'
               : isUrdu
               ? 'سرور موڈ میں ڈیٹا آن لائن سرور پر محفوظ ہوتا ہے۔ آف لائن ووٹ اس ڈیوائس میں محفوظ رہتا ہے، خودکار طور پر گنا نہیں جاتا۔'
               : 'In Server Mode, data is stored on the online server. An offline vote stays saved on this device — it is not counted automatically.'}

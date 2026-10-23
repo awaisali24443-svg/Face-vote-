@@ -90,7 +90,7 @@ export const CheckInView: React.FC<CheckInViewProps> = ({
   const { isUrdu } = useLanguage();
   const [isKioskMode, setIsKioskMode] = useState<boolean>(true);
   // Public roll counts from /api/config — used to stop the camera opening
-  // when nobody can possibly match (empty or unapproved voter roll).
+  // when nobody can possibly match (empty voter roll).
   const [rollCounts, setRollCounts] = useState<{ registered: number; approved: number } | null>(null);
   const [showNoVoters, setShowNoVoters] = useState<boolean>(false);
 
@@ -457,7 +457,7 @@ export const CheckInView: React.FC<CheckInViewProps> = ({
 
   // If in Kiosk Mode, show main kiosk landing card
   if (isKioskMode) {
-    // Empty-roll guard: no approved voters = nobody can cast a vote yet.
+    // Empty-roll guard: no registered voters = nobody can cast a vote yet.
     // Explain it plainly instead of opening a camera that can never match.
     if (showNoVoters) {
       return (
@@ -475,8 +475,8 @@ export const CheckInView: React.FC<CheckInViewProps> = ({
             </h2>
             <p className={`mt-3 text-sm sm:text-base leading-relaxed ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>
               {isUrdu
-                ? 'ووٹنگ تب ہی شروع ہو سکتی ہے جب افسر پہلے ووٹرز کو رجسٹر اور منظور کرے۔ ایڈمن کھولیں، ووٹر شامل کریں، پھر اسے منظور کریں۔'
-                : 'Voting can only start after the election officer registers voters and approves them. Open Admin, enroll a voter, then approve them in the Voters list.'}
+                ? 'ووٹنگ تب ہی شروع ہو سکتی ہے جب افسر پہلے ووٹرز کو رجسٹر کرے۔ ایڈمن کھولیں اور ووٹر شامل کریں — وہ فوراً ووٹ ڈال سکتا ہے۔'
+                : 'Voting can only start after the election officer registers voters. Open Admin and enroll a voter — they can cast their vote straight away.'}
             </p>
             <button
               onClick={() => {

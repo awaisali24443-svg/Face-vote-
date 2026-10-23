@@ -44,7 +44,7 @@ const DEFAULT_CONFIG = {
   title: 'ELECTION COMMISSION OF PAKISTAN // GENERAL ELECTION 2026',
   subtitle: 'Constituency NA-127 (Lahore-XI) // Biometric Polling Station #42',
   isBallotLocked: false,
-  autoApprove: false,
+  autoApprove: true,
 };
 const DEFAULT_PIN = '2026';
 const DEFAULT_THRESHOLD = 0.82;
@@ -186,9 +186,30 @@ export function ensureLocalSeeded(): Promise<void> {
       }
       await removeDummyVotersOnce();
       await localizeSeedCandidatePhotosOnce();
+      await approveExistingPendingVotersOnce();
     })();
   }
   return seedPromise;
+}
+
+// The approval step was removed (registration by the officer IS the
+// approval — and the app never had an approve button, so pending voters
+// were stuck). Approve every voter left 'pending' by older builds, once.
+async function approveExistingPendingVotersOnce(): Promise<void> {
+  if (await localMetaGet('pendingAutoApprovedV1')) return;
+  const voters = await localGetAll<any>('voters');
+  const now = new Date().toISOString();
+  for (const voter of voters) {
+    if (voter.approval_status === 'pending') {
+      voter.approval_status = 'approved';
+      voter.approved_at = voter.approved_at || now;
+      await localPut('voters', voter);
+    }
+  }
+  const config = (await localMetaGet('config')) || { ...DEFAULT_CONFIG };
+  config.autoApprove = true;
+  await localMetaSet('config', config);
+  await localMetaSet('pendingAutoApprovedV1', true);
 }
 
 // Older installs seeded candidate photos as remote CDN links, which break
@@ -552,7 +573,6 @@ async function enroll(b: any): Promise<LocalApiResult> {
     }
   }
 
-  const config = await getConfig();
   const now = new Date().toISOString();
   const voter: any = {
     name: name.trim(),
@@ -569,10 +589,13 @@ async function enroll(b: any): Promise<LocalApiResult> {
     nadra_verified: b.nadra_verified === true,
     embedding: Array.isArray(embedding) ? embedding : [],
     photo: photo || undefined,
-    approval_status: config.autoApprove ? 'approved' : 'pending',
+    // Registration IS the approval: only an officer (admin PIN) can enroll,
+    // so a newly registered voter is approved immediately and can vote
+    // straight away — there is no separate approval step.
+    approval_status: 'approved',
     has_voted: false,
     enrolled_at: now,
-    approved_at: config.autoApprove ? now : null,
+    approved_at: now,
   };
   const id = await localAdd('voters', voter);
   voter.id = id;
@@ -713,7 +736,7 @@ async function computeAdminStats(): Promise<any> {
       id: v.id,
       name: v.name,
       photo: v.photo,
-      approval_status: v.approval_status || 'pending',
+      approval_status: v.approval_status || 'approved',
       has_voted: Boolean(v.has_voted),
       enrolled_at: v.enrolled_at,
       approved_at: v.approved_at || null,
