@@ -11,7 +11,11 @@ import {
 import { PublicElectionResults } from '../types';
 import { offlineStorage } from '../services/offlineStorage';
 import { renderSymbolIcon, getSymbolById } from '../services/electoralSymbols';
-import { getLocalizedCandidateName } from '../services/urduCandidateHelper';
+import {
+  getLocalizedCandidateName,
+  getLocalizedPartyName,
+  getLocalizedTagline,
+} from '../services/urduCandidateHelper';
 import { cyberSound } from '../services/soundEffects';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -247,6 +251,37 @@ export const PublicResultsBallotView: React.FC<PublicResultsBallotViewProps> = (
                       <Trophy className="w-4 h-4" />
                       <span>{isUrdu ? 'سب سے آگے' : 'Leading'}</span>
                     </div>
+                  )}
+                </div>
+
+                {/* Party, tagline & optional candidate details */}
+                <div className="space-y-1.5">
+                  <p className={`text-xs sm:text-sm font-bold ${isLight ? 'text-blue-800' : 'text-blue-300'}`}>
+                    {getLocalizedPartyName(cand.party, isUrdu)}
+                  </p>
+                  {cand.tagline && (
+                    <p className={`text-[11px] sm:text-xs leading-relaxed ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                      {getLocalizedTagline(cand.tagline, isUrdu)}
+                    </p>
+                  )}
+                  {(cand.profession || cand.age || cand.hometown) && (
+                    <p className={`text-[11px] sm:text-xs font-semibold ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
+                      {[cand.profession, cand.age ? `${cand.age} yrs` : null, cand.hometown]
+                        .filter(Boolean)
+                        .join(' • ')}
+                    </p>
+                  )}
+                  {cand.education && (
+                    <p className={`text-[11px] sm:text-xs ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                      <span className="font-bold">{isUrdu ? 'تعلیم: ' : 'Education: '}</span>
+                      {cand.education}
+                    </p>
+                  )}
+                  {cand.experience && (
+                    <p className={`text-[11px] sm:text-xs ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                      <span className="font-bold">{isUrdu ? 'تجربہ: ' : 'Experience: '}</span>
+                      {cand.experience}
+                    </p>
                   )}
                 </div>
 

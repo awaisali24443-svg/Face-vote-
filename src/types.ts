@@ -33,6 +33,12 @@ export interface Candidate {
   display_order: number;
   avatarColor?: string;
   base_votes?: number;
+  // Optional candidate details (shown on results/profile cards, never on the ballot paper)
+  education?: string;
+  profession?: string;
+  age?: number;
+  hometown?: string;
+  experience?: string;
 }
 
 export interface PublicCandidateResult {
@@ -48,6 +54,11 @@ export interface PublicCandidateResult {
   votes: number;
   percentage: number;
   isLeading: boolean;
+  education?: string;
+  profession?: string;
+  age?: number;
+  hometown?: string;
+  experience?: string;
 }
 
 export interface PublicElectionResults {

@@ -511,6 +511,23 @@ export const AdminCandidateStudio: React.FC<AdminCandidateStudioProps> = ({
                         {getLocalizedTagline(candidate.tagline, isUrdu)}
                       </p>
                     )}
+                    {(candidate.profession || candidate.age || candidate.hometown || candidate.education || candidate.experience) && (
+                      <div className={`text-[11px] mt-1.5 space-y-0.5 max-w-lg leading-relaxed ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                        {(candidate.profession || candidate.age || candidate.hometown) && (
+                          <p className="font-semibold">
+                            {[candidate.profession, candidate.age ? `${candidate.age} yrs` : null, candidate.hometown]
+                              .filter(Boolean)
+                              .join(' • ')}
+                          </p>
+                        )}
+                        {candidate.education && (
+                          <p><span className="font-bold">Education: </span>{candidate.education}</p>
+                        )}
+                        {candidate.experience && (
+                          <p><span className="font-bold">Experience: </span>{candidate.experience}</p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
 

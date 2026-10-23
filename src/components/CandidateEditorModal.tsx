@@ -53,6 +53,11 @@ export const CandidateEditorModal: React.FC<CandidateEditorModalProps> = ({
   const [signIcon, setSignIcon] = useState('bat');
   const [signImageUrl, setSignImageUrl] = useState('');
   const [photoUrl, setPhotoUrl] = useState('');
+  const [education, setEducation] = useState('');
+  const [profession, setProfession] = useState('');
+  const [age, setAge] = useState('');
+  const [hometown, setHometown] = useState('');
+  const [experience, setExperience] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -65,6 +70,11 @@ export const CandidateEditorModal: React.FC<CandidateEditorModalProps> = ({
       setSignIcon(candidate.sign_icon || 'bat');
       setSignImageUrl(candidate.sign_image_url || '');
       setPhotoUrl(candidate.photo_url || '');
+      setEducation(candidate.education || '');
+      setProfession(candidate.profession || '');
+      setAge(candidate.age ? String(candidate.age) : '');
+      setHometown(candidate.hometown || '');
+      setExperience(candidate.experience || '');
     } else {
       setName('');
       setParty('');
@@ -73,6 +83,11 @@ export const CandidateEditorModal: React.FC<CandidateEditorModalProps> = ({
       setSignIcon('bat');
       setSignImageUrl('');
       setPhotoUrl(PRESET_PHOTOS[0]);
+      setEducation('');
+      setProfession('');
+      setAge('');
+      setHometown('');
+      setExperience('');
     }
     setError(null);
   }, [candidate, isOpen]);
@@ -144,6 +159,11 @@ export const CandidateEditorModal: React.FC<CandidateEditorModalProps> = ({
         sign_icon: signIcon,
         sign_image_url: signImageUrl.trim() || undefined,
         photo_url: photoUrl,
+        education: education.trim() || undefined,
+        profession: profession.trim() || undefined,
+        age: age.trim() ? Number(age.trim()) : undefined,
+        hometown: hometown.trim() || undefined,
+        experience: experience.trim() || undefined,
       });
       cyberSound.playAccessGranted();
       onClose();
@@ -259,6 +279,67 @@ export const CandidateEditorModal: React.FC<CandidateEditorModalProps> = ({
                   : 'bg-slate-950 border-slate-700 text-white focus:border-blue-400'
               }`}
             />
+          </div>
+
+          {/* Optional Candidate Details — shown on results/profile cards only */}
+          <div className={`p-4 rounded-2xl border space-y-4 ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950 border-slate-800'}`}>
+            <p className={`text-[11px] font-black uppercase tracking-wider ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+              Optional Details <span className="normal-case font-semibold">(leave blank to hide — shown on the results screen, never on the ballot paper)</span>
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className={`block text-xs font-bold mb-1.5 uppercase ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>Education</label>
+                <input
+                  type="text"
+                  value={education}
+                  onChange={(e) => setEducation(e.target.value)}
+                  placeholder="e.g. LLB (Hons), University of the Punjab"
+                  className={`w-full px-4 py-2.5 rounded-xl border text-xs focus:outline-none transition ${isLight ? 'bg-white border-slate-300 text-slate-900 focus:border-blue-500' : 'bg-slate-900 border-slate-700 text-white focus:border-blue-400'}`}
+                />
+              </div>
+              <div>
+                <label className={`block text-xs font-bold mb-1.5 uppercase ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>Profession</label>
+                <input
+                  type="text"
+                  value={profession}
+                  onChange={(e) => setProfession(e.target.value)}
+                  placeholder="e.g. Advocate — Barrister-at-Law"
+                  className={`w-full px-4 py-2.5 rounded-xl border text-xs focus:outline-none transition ${isLight ? 'bg-white border-slate-300 text-slate-900 focus:border-blue-500' : 'bg-slate-900 border-slate-700 text-white focus:border-blue-400'}`}
+                />
+              </div>
+              <div>
+                <label className={`block text-xs font-bold mb-1.5 uppercase ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>Age</label>
+                <input
+                  type="number"
+                  min={18}
+                  max={120}
+                  value={age}
+                  onChange={(e) => setAge(e.target.value)}
+                  placeholder="e.g. 47"
+                  className={`w-full px-4 py-2.5 rounded-xl border text-xs focus:outline-none transition ${isLight ? 'bg-white border-slate-300 text-slate-900 focus:border-blue-500' : 'bg-slate-900 border-slate-700 text-white focus:border-blue-400'}`}
+                />
+              </div>
+              <div>
+                <label className={`block text-xs font-bold mb-1.5 uppercase ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>Hometown</label>
+                <input
+                  type="text"
+                  value={hometown}
+                  onChange={(e) => setHometown(e.target.value)}
+                  placeholder="e.g. Lahore, Punjab"
+                  className={`w-full px-4 py-2.5 rounded-xl border text-xs focus:outline-none transition ${isLight ? 'bg-white border-slate-300 text-slate-900 focus:border-blue-500' : 'bg-slate-900 border-slate-700 text-white focus:border-blue-400'}`}
+                />
+              </div>
+            </div>
+            <div>
+              <label className={`block text-xs font-bold mb-1.5 uppercase ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>Experience / Public Service</label>
+              <input
+                type="text"
+                value={experience}
+                onChange={(e) => setExperience(e.target.value)}
+                placeholder="e.g. Former MNA (2018–2023); chaired the Law & Justice Committee"
+                className={`w-full px-4 py-2.5 rounded-xl border text-xs focus:outline-none transition ${isLight ? 'bg-white border-slate-300 text-slate-900 focus:border-blue-500' : 'bg-slate-900 border-slate-700 text-white focus:border-blue-400'}`}
+              />
+            </div>
           </div>
 
           {/* Candidate Photo Selector / Uploader */}
