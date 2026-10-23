@@ -178,10 +178,10 @@ export const PublicResultsBallotView: React.FC<PublicResultsBallotViewProps> = (
 
       {/* CANDIDATE RESULTS GRID (SYMBOL PICTURE & CANDIDATE NAME) */}
       <div
-        className={`w-full rounded-3xl border-4 p-4 sm:p-6 md:p-8 relative overflow-hidden transition-all shadow-xl ${
+        className={`w-full rounded-3xl border p-4 sm:p-6 md:p-8 relative overflow-hidden transition-all ${
           isLight
-            ? 'bg-[#f7fbff] border-blue-600 shadow-blue-200/50'
-            : 'bg-slate-950 border-blue-500/80 shadow-[0_0_40px_rgba(37,99,235,0.25)]'
+            ? 'bg-white border-slate-200'
+            : 'bg-slate-950 border-slate-800'
         }`}
       >
         {/* CANDIDATE GRID */}

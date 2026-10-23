@@ -4,15 +4,14 @@ import {
   UserPlus,
   CheckCircle2,
   ScanFace,
-  ShieldCheck,
-  Wifi,
-  WifiOff,
-  Download,
-  CloudDownload,
   Trophy,
   RefreshCw,
   X,
   Info,
+  Download,
+  CloudDownload,
+  ChevronDown,
+  ShieldCheck,
 } from 'lucide-react';
 import { cyberSound } from '../services/soundEffects';
 import { useTheme } from '../context/ThemeContext';
@@ -51,6 +50,7 @@ export const CastVoteKiosk: React.FC<CastVoteKioskProps> = ({
     lastSyncTime,
   } = usePWA();
   const [showInstallHelp, setShowInstallHelp] = useState<boolean>(false);
+  const [showDevicePanel, setShowDevicePanel] = useState<boolean>(false);
   const [prepareMessage, setPrepareMessage] = useState<string | null>(null);
   const [appMode, setAppModeState] = useState<AppMode>(() => getAppMode());
 
@@ -113,41 +113,37 @@ export const CastVoteKiosk: React.FC<CastVoteKioskProps> = ({
     window.location.reload();
   };
 
+  const statusText = isOnline
+    ? isUrdu
+      ? 'آن لائن — تیار ہے'
+      : 'Online — Ready'
+    : hasSavedData
+    ? isUrdu
+      ? 'آف لائن — محفوظ ڈیٹا سے تیار ہے'
+      : 'Offline — Ready with saved data'
+    : isUrdu
+    ? 'آف لائن — ڈیوائس تیار نہیں'
+    : 'Offline — Device not prepared yet';
+
   return (
-    <div className="w-full max-w-4xl mx-auto px-3 sm:px-6 py-6 sm:py-12 flex flex-col items-center justify-center min-h-[65vh]">
+    <div className="w-full max-w-xl mx-auto px-3 sm:px-6 py-6 sm:py-10 flex flex-col items-center justify-center min-h-[65vh]">
       {/* SUCCESS CONFIRMATION IF COMING FROM A JUST-SUBMITTED VOTE */}
       {lastVoteRecordedMessage && (
         <div
           id="last-vote-recorded-banner"
-          className={`w-full max-w-md mb-6 p-5 rounded-3xl border-2 flex items-center space-x-3.5 animate-fade-in shadow-xl ${
+          className={`w-full mb-5 p-4 rounded-2xl border flex items-center gap-3 animate-fade-in ${
             isOfflineSavedVote
               ? isLight
-                ? 'bg-amber-50 border-amber-500 text-amber-950'
-                : 'bg-amber-950/90 border-amber-400 text-amber-100 shadow-[0_0_30px_rgba(245,158,11,0.25)]'
+                ? 'bg-amber-50 border-amber-400 text-amber-950'
+                : 'bg-amber-950/90 border-amber-500/60 text-amber-100'
               : isLight
-              ? 'bg-emerald-50 border-emerald-500 text-emerald-950'
-              : 'bg-emerald-950/90 border-emerald-400 text-emerald-100 shadow-[0_0_30px_rgba(52,211,153,0.3)]'
+              ? 'bg-emerald-50 border-emerald-400 text-emerald-950'
+              : 'bg-emerald-950/90 border-emerald-500/60 text-emerald-100'
           }`}
         >
-          <div
-            className={`w-11 h-11 rounded-2xl border-2 flex items-center justify-center shrink-0 shadow-md ${
-              isOfflineSavedVote
-                ? isLight
-                  ? 'bg-amber-100 border-amber-500 text-amber-800'
-                  : 'bg-amber-900 border-amber-400 text-amber-300'
-                : isLight
-                ? 'bg-emerald-100 border-emerald-500 text-emerald-800'
-                : 'bg-emerald-900 border-emerald-400 text-emerald-300'
-            }`}
-          >
-            <CheckCircle2 className="w-6 h-6" />
-          </div>
-          <div>
-            <div
-              className={`text-xs font-bold uppercase tracking-wider ${
-                isOfflineSavedVote ? 'text-amber-700 dark:text-amber-300' : 'text-emerald-700 dark:text-emerald-300'
-              }`}
-            >
+          <CheckCircle2 className="w-6 h-6 shrink-0" />
+          <div className="min-w-0">
+            <div className="text-[11px] font-bold uppercase tracking-wider opacity-80">
               {isOfflineSavedVote
                 ? isUrdu
                   ? 'ووٹ اس ڈیوائس میں محفوظ ہے'
@@ -156,137 +152,89 @@ export const CastVoteKiosk: React.FC<CastVoteKioskProps> = ({
                 ? 'ووٹ درج ہو چکا ہے'
                 : 'Vote Successfully Recorded'}
             </div>
-            <div className="text-lg font-black truncate mt-0.5">
-              {lastVoteRecordedMessage}
-            </div>
+            <div className="text-base font-black truncate">{lastVoteRecordedMessage}</div>
           </div>
         </div>
       )}
 
-      {/* MAIN KIOSK LAUNCH CARD */}
+      {/* ONE CLEAN MAIN CARD */}
       <div
-        className={`w-full max-w-xl rounded-3xl border-2 p-6 sm:p-10 text-center flex flex-col items-center transition-all shadow-xl ${
-          isLight
-            ? 'bg-white border-blue-200'
-            : 'bg-slate-950/95 border-slate-800 shadow-2xl'
+        className={`w-full rounded-3xl border p-6 sm:p-9 text-center flex flex-col items-center shadow-sm ${
+          isLight ? 'bg-white border-slate-200' : 'bg-slate-950/95 border-slate-800'
         }`}
       >
-        {/* Kiosk Icon Header */}
         <div
-          className={`w-16 h-16 sm:w-20 sm:h-20 rounded-3xl border-2 flex items-center justify-center mb-4 shadow-lg ${
-            isLight
-              ? 'bg-blue-50 border-blue-600 text-blue-700 shadow-blue-100'
-              : 'bg-blue-950/90 border-blue-400 text-blue-300 shadow-[0_0_20px_rgba(37,99,235,0.3)]'
+          className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center mb-3 ${
+            isLight ? 'bg-blue-50 text-blue-700' : 'bg-blue-950/80 text-blue-300'
           }`}
         >
-          <ScanFace className="w-9 h-9 sm:w-11 sm:h-11" />
+          <ScanFace className="w-8 h-8 sm:w-9 sm:h-9" />
         </div>
 
-        <h1
-          className={`text-2xl sm:text-3xl font-black font-display tracking-tight ${
-            isLight ? 'text-blue-950' : 'text-white'
-          }`}
-        >
+        <h1 className={`text-2xl sm:text-3xl font-black font-display tracking-tight ${isLight ? 'text-blue-950' : 'text-white'}`}>
           {isUrdu ? 'بائیو میٹرک ووٹنگ بوتھ' : 'Biometric Voting Kiosk'}
         </h1>
 
-        <p
-          className={`text-xs sm:text-sm font-medium mt-2 max-w-md ${
-            isLight ? 'text-slate-600' : 'text-slate-400'
-          }`}
-        >
+        <p className={`text-sm mt-1.5 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
           {isUrdu
-            ? 'چہرے کی فوری بائیو میٹرک تصدیق سے اپنا ووٹ مکمل رازداری کے ساتھ کاسٹ کریں۔'
-            : 'Instant facial biometric verification & secret ballot voting.'}
+            ? 'چہرے کی تصدیق کریں اور اپنا ووٹ ڈالیں۔'
+            : 'Verify your face and cast your vote.'}
         </p>
 
-        {/* Offline Readiness & Security Badge */}
-        <div className="mt-3.5 flex items-center justify-center gap-2 flex-wrap">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
-            {isOnline ? (
-              <Wifi className="w-3.5 h-3.5 text-emerald-400" />
-            ) : (
-              <WifiOff className="w-3.5 h-3.5 text-amber-400" />
-            )}
+        {/* ONE quiet status line */}
+        <div className={`mt-3 flex items-center gap-2 text-xs font-semibold ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+          <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-500' : hasSavedData ? 'bg-amber-500' : 'bg-rose-500'}`} />
+          <span>{statusText}</span>
+          {(cachedCandidatesCount > 0 || cachedVotersCount > 0) && (
             <span>
-              {isOnline
-                ? isUrdu
-                  ? 'آن لائن — آف لائن کے لیے تیار کیا جا سکتا ہے'
-                  : 'Online — Can Be Prepared for Offline Use'
-                : hasSavedData
-                ? isUrdu
-                  ? 'آف لائن — محفوظ ڈیٹا دستیاب ہے'
-                  : 'Offline — Saved Data Available'
-                : isUrdu
-                ? 'آف لائن — ڈیوائس ابھی تیار نہیں'
-                : 'Offline — Device Not Prepared Yet'}
-            </span>
-          </span>
-          {cachedVotersCount > 0 && (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs bg-slate-800/80 border border-slate-700/60 text-slate-300">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-              <span>
-                {cachedVotersCount} {isUrdu ? 'ووٹرز محفوظ' : 'Voters Saved'}
-              </span>
-            </span>
-          )}
-          {cachedCandidatesCount > 0 && (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs bg-slate-800/80 border border-slate-700/60 text-slate-300">
-              <Vote className="w-3.5 h-3.5 text-blue-400" />
-              <span>
-                {cachedCandidatesCount} {isUrdu ? 'امیدوار محفوظ' : 'Candidates Saved'}
-              </span>
+              • {cachedCandidatesCount} {isUrdu ? 'امیدوار' : 'candidates'} • {cachedVotersCount}{' '}
+              {isUrdu ? 'ووٹر' : 'voters'}
             </span>
           )}
         </div>
 
-        {/* PRIMARY CALL TO ACTION BUTTON: CAST VOTE */}
-        <div className="mt-8 mb-5 w-full max-w-sm">
-          <button
-            id="start-cast-vote-btn"
-            onClick={handleStart}
-            className="w-full py-4 sm:py-5 px-6 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-blue-600 hover:from-emerald-500 hover:via-teal-500 hover:to-blue-500 text-white font-black text-lg sm:text-xl shadow-[0_0_30px_rgba(16,185,129,0.4)] flex items-center justify-center space-x-3 transition duration-200 transform hover:scale-[1.02] active:scale-95 cursor-pointer border border-emerald-300"
-          >
-            <Vote className="w-7 h-7 sm:w-8 sm:h-8 shrink-0" />
-            <span>{isUrdu ? 'ووٹ ڈالیں' : 'Cast Vote'}</span>
-          </button>
-        </div>
+        {/* PRIMARY ACTION */}
+        <button
+          id="start-cast-vote-btn"
+          onClick={handleStart}
+          className="mt-7 w-full max-w-sm py-4 sm:py-5 px-6 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-lg sm:text-xl flex items-center justify-center gap-3 transition active:scale-[0.98] cursor-pointer"
+        >
+          <Vote className="w-7 h-7 shrink-0" />
+          <span>{isUrdu ? 'ووٹ ڈالیں' : 'Cast Vote'}</span>
+        </button>
 
-        {/* THREE EASY STEPS — written for a first-time voter, not an officer */}
-        <div className="w-full max-w-md grid grid-cols-3 gap-2 sm:gap-3" aria-label="How to vote">
+        {/* THREE SIMPLE STEPS */}
+        <div className="mt-6 w-full max-w-md grid grid-cols-3 gap-2" aria-label="How to vote">
           {[
             { number: '1', en: 'Tap Cast Vote', ur: 'ووٹ ڈالیں دبائیں' },
             { number: '2', en: 'Face check', ur: 'چہرے کی تصدیق' },
             { number: '3', en: 'Pick & confirm', ur: 'منتخب کر کے تصدیق کریں' },
           ].map((step) => (
-            <div
-              key={step.number}
-              className={`rounded-2xl border px-2 py-3 ${isLight ? 'bg-blue-50/70 border-blue-100' : 'bg-slate-900 border-slate-800'}`}
-            >
-              <div className="w-7 h-7 mx-auto rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-black">
+            <div key={step.number} className="flex flex-col items-center gap-1.5 py-1">
+              <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-black">
                 {step.number}
               </div>
-              <div className={`mt-2 text-[11px] sm:text-xs font-black leading-tight ${isLight ? 'text-blue-950' : 'text-slate-100'}`}>
+              <div className={`text-[11px] sm:text-xs font-bold leading-tight ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>
                 {isUrdu ? step.ur : step.en}
               </div>
             </div>
           ))}
         </div>
 
-        {/* OTHER MAIN ACTIONS */}
-        <div className="mt-6 pt-6 border-t w-full grid grid-cols-1 sm:grid-cols-2 gap-3 border-slate-200 dark:border-slate-800">
+        {/* SECONDARY ACTIONS */}
+        <div className="mt-6 pt-5 border-t w-full grid grid-cols-2 gap-3 border-slate-200 dark:border-slate-800">
           <button
             onClick={() => {
               cyberSound.playClick();
               onGoToEnroll();
             }}
-            className={`w-full py-3.5 px-5 rounded-2xl border-2 flex items-center justify-center space-x-2.5 font-bold text-sm sm:text-base cursor-pointer transition shadow-sm ${
+            className={`w-full py-3 px-4 rounded-2xl border flex items-center justify-center gap-2 font-bold text-sm cursor-pointer transition ${
               isLight
-                ? 'bg-amber-50 hover:bg-amber-100 text-amber-950 border-amber-400'
-                : 'bg-amber-950/40 hover:bg-amber-900/60 text-amber-300 border-amber-600/50'
+                ? 'bg-white hover:bg-slate-50 text-slate-800 border-slate-300'
+                : 'bg-slate-900 hover:bg-slate-800 text-slate-100 border-slate-700'
             }`}
           >
-            <UserPlus className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
+            <UserPlus className="w-5 h-5 shrink-0" />
             <span>{isUrdu ? 'نیا ووٹر رجسٹر کریں' : 'Register New Voter'}</span>
           </button>
 
@@ -295,205 +243,175 @@ export const CastVoteKiosk: React.FC<CastVoteKioskProps> = ({
               cyberSound.playClick();
               onViewResults?.();
             }}
-            className={`w-full py-3.5 px-5 rounded-2xl border-2 flex items-center justify-center space-x-2.5 font-bold text-sm sm:text-base cursor-pointer transition shadow-sm ${
+            className={`w-full py-3 px-4 rounded-2xl border flex items-center justify-center gap-2 font-bold text-sm cursor-pointer transition ${
               isLight
-                ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-950 border-emerald-400'
-                : 'bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 border-emerald-600/50'
+                ? 'bg-white hover:bg-slate-50 text-slate-800 border-slate-300'
+                : 'bg-slate-900 hover:bg-slate-800 text-slate-100 border-slate-700'
             }`}
           >
-            <Trophy className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <Trophy className="w-5 h-5 shrink-0" />
             <span>{isUrdu ? 'نتائج دیکھیں' : 'View Results'}</span>
           </button>
         </div>
       </div>
 
-      {/* INSTALL + OFFLINE SETUP CARD */}
-      <section
-        aria-label="Install and offline setup"
-        className={`w-full max-w-xl mt-6 rounded-3xl border-2 p-5 sm:p-7 shadow-xl ${
-          isLight ? 'bg-white border-slate-200' : 'bg-slate-950/95 border-slate-800'
+      {/* SAVED VOTES WAITING FOR OFFICER REVIEW — one slim line, only when it matters */}
+      {pendingVotesCount > 0 && (
+        <div className="w-full mt-4 p-3 rounded-2xl bg-amber-500/10 border border-amber-500/40 text-amber-600 dark:text-amber-300 text-xs sm:text-sm font-bold flex gap-2.5">
+          <Info className="w-5 h-5 shrink-0" />
+          <span>
+            {isUrdu
+              ? `${pendingVotesCount} ووٹ اس ڈیوائس میں محفوظ ہیں۔ انٹرنیٹ آنے پر افسر ان کا جائزہ لے گا۔`
+              : `${pendingVotesCount} vote(s) are saved on this device. An officer must review them when the internet returns.`}
+          </span>
+        </div>
+      )}
+
+      {/* QUIET LINK TO APP & OFFLINE SETTINGS */}
+      <button
+        type="button"
+        onClick={() => setShowDevicePanel((v) => !v)}
+        className={`mt-5 inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold cursor-pointer ${
+          isLight ? 'text-slate-500 hover:text-slate-700' : 'text-slate-400 hover:text-slate-200'
         }`}
+        aria-expanded={showDevicePanel}
       >
-        <div className="flex items-start gap-3.5">
-          <div
-            className={`w-12 h-12 rounded-2xl border-2 flex items-center justify-center shrink-0 ${
-              isLight ? 'bg-blue-50 border-blue-500 text-blue-700' : 'bg-blue-950 border-blue-400 text-blue-300'
-            }`}
-          >
-            <CloudDownload className="w-6 h-6" />
-          </div>
-          <div className="text-left">
-            <h2 className={`text-lg sm:text-xl font-black ${isLight ? 'text-blue-950' : 'text-white'}`}>
-              {isUrdu ? 'ایپ ڈاؤن لوڈ کریں — آف لائن استعمال کریں' : 'Download the App — Use It Offline'}
-            </h2>
-            <p className={`text-xs sm:text-sm font-medium mt-1 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
-              {isUrdu
-                ? 'ایک بار آن لائن رہتے ہوئے ایپ انسٹال کریں اور “ڈیوائس تیار کریں” دبائیں۔ اس کے بعد ایپ اسی ڈیوائس پر انٹرنیٹ کے بغیر کھل سکے گی۔'
-                : 'While online once, install the app and tap “Prepare This Device.” After that, FaceVote can open and run on this device without internet.'}
-            </p>
-          </div>
-        </div>
+        <ShieldCheck className="w-4 h-4" />
+        <span>{isUrdu ? 'ایپ اور آف لائن سیٹنگز' : 'App & Offline Settings'}</span>
+        <ChevronDown className={`w-4 h-4 transition-transform ${showDevicePanel ? 'rotate-180' : ''}`} />
+      </button>
 
-        <div className="mt-4 flex flex-wrap gap-2 text-[11px] sm:text-xs font-bold">
-          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border ${isAppCached || isInstalled ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-500' : 'bg-slate-500/10 border-slate-400/30 text-slate-400'}`}>
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            {isAppCached || isInstalled
-              ? isUrdu
-                ? 'ایپ فائلیں محفوظ ہیں'
-                : 'App Files Saved'
-              : isUrdu
-              ? 'ایپ فائلیں محفوظ ہو رہی ہیں'
-              : 'Saving App Files…'}
-          </span>
-          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border ${isLight ? 'bg-blue-50 border-blue-200 text-blue-900' : 'bg-slate-900 border-slate-700 text-slate-200'}`}>
-            <Vote className="w-3.5 h-3.5" />
-            {cachedCandidatesCount} {isUrdu ? 'امیدوار محفوظ' : 'Candidates Saved'}
-          </span>
-          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border ${isLight ? 'bg-blue-50 border-blue-200 text-blue-900' : 'bg-slate-900 border-slate-700 text-slate-200'}`}>
-            <ShieldCheck className="w-3.5 h-3.5" />
-            {cachedVotersCount} {isUrdu ? 'ووٹر محفوظ' : 'Voters Saved'}
-          </span>
-          {lastSyncTime && (
-            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border ${isLight ? 'bg-slate-50 border-slate-200 text-slate-600' : 'bg-slate-900 border-slate-700 text-slate-300'}`}>
-              <RefreshCw className="w-3.5 h-3.5" />
-              {isUrdu ? 'آخری تیاری: ' : 'Last prepared: '}
-              {lastSyncTime.toLocaleDateString()} {lastSyncTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </span>
-          )}
-        </div>
-
-        <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <button
-            type="button"
-            onClick={handleInstall}
-            disabled={isInstalled}
-            className={`py-3.5 px-5 rounded-2xl font-black text-sm sm:text-base flex items-center justify-center gap-2.5 transition ${
-              isInstalled
-                ? 'bg-emerald-600/15 border-2 border-emerald-500/50 text-emerald-500 cursor-default'
-                : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg cursor-pointer active:scale-95'
-            }`}
-          >
-            {isInstalled ? <CheckCircle2 className="w-5 h-5" /> : <Download className="w-5 h-5" />}
-            <span>{isInstalled ? (isUrdu ? 'ایپ انسٹال ہے' : 'App Installed') : isUrdu ? 'ایپ انسٹال کریں' : 'Install App'}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handlePrepareOffline}
-            disabled={!isOnline || isPreparingOffline}
-            className={`py-3.5 px-5 rounded-2xl font-black text-sm sm:text-base flex items-center justify-center gap-2.5 transition border-2 ${
-              !isOnline || isPreparingOffline
-                ? isLight
-                  ? 'bg-slate-100 border-slate-300 text-slate-400 cursor-not-allowed'
-                  : 'bg-slate-900 border-slate-700 text-slate-500 cursor-not-allowed'
-                : 'bg-emerald-600 hover:bg-emerald-500 border-emerald-400 text-white shadow-lg cursor-pointer active:scale-95'
-            }`}
-          >
-            {isPreparingOffline ? <RefreshCw className="w-5 h-5 animate-spin" /> : <CloudDownload className="w-5 h-5" />}
-            <span>
-              {isPreparingOffline
+      {/* APP & OFFLINE SETTINGS — everything secondary lives here, out of the way */}
+      {showDevicePanel && (
+        <section
+          aria-label="App and offline settings"
+          className={`w-full mt-3 rounded-3xl border p-5 sm:p-6 ${
+            isLight ? 'bg-white border-slate-200' : 'bg-slate-950/95 border-slate-800'
+          }`}
+        >
+          <div className={`space-y-1.5 text-xs sm:text-sm font-semibold ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>
+            <p>
+              {isAppCached || isInstalled
                 ? isUrdu
-                  ? 'تیار ہو رہا ہے…'
-                  : 'Preparing…'
+                  ? '✓ ایپ فائلیں محفوظ ہیں'
+                  : '✓ App files saved'
                 : isUrdu
-                ? 'ڈیوائس تیار کریں'
-                : 'Prepare This Device'}
-            </span>
-          </button>
-        </div>
-
-        {!isOnline && (
-          <div className="mt-4 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/40 text-amber-600 dark:text-amber-300 text-xs sm:text-sm font-bold flex gap-2.5">
-            <Info className="w-5 h-5 shrink-0" />
-            <span>
-              {isUrdu
-                ? 'آپ آف لائن ہیں۔ تیاری صرف آن لائن رہتے ہوئے ہو سکتی ہے؛ پہلے سے محفوظ ڈیٹا اب بھی استعمال ہو سکتا ہے۔'
-                : 'You are offline. Preparation can only run online; data already saved on this device can still be used.'}
-            </span>
-          </div>
-        )}
-
-        {prepareMessage && (
-          <div className="mt-4 p-3.5 rounded-2xl bg-blue-500/10 border border-blue-500/40 text-blue-700 dark:text-blue-300 text-xs sm:text-sm font-bold">
-            {prepareMessage}
-          </div>
-        )}
-
-        {pendingVotesCount > 0 && (
-          <div className="mt-4 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/40 text-amber-600 dark:text-amber-300 text-xs sm:text-sm font-bold flex gap-2.5">
-            <Info className="w-5 h-5 shrink-0" />
-            <span>
-              {isUrdu
-                ? `${pendingVotesCount} ووٹ اس ڈیوائس میں محفوظ ہیں۔ انٹرنیٹ آنے پر افسر ان کا جائزہ لے گا۔`
-                : `${pendingVotesCount} vote(s) are saved on this device. An officer must review them when the internet returns.`}
-            </span>
-          </div>
-        )}
-
-        {/* DEVICE MODE — EXPO DEMO PANEL */}
-        <div className={`mt-5 p-4 rounded-2xl border-2 ${appMode === 'device' ? 'bg-emerald-500/10 border-emerald-500/40' : isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-900 border-slate-700'}`}>
-          {appMode === 'device' ? (
-            <>
-              <p className="text-sm sm:text-base font-black text-emerald-600 dark:text-emerald-400">
-                {isUrdu ? 'ایکسپو ڈیمو موڈ: مکمل آف لائن' : 'EXPO DEMO MODE — Fully Offline'}
+                ? 'ایپ فائلیں محفوظ ہو رہی ہیں…'
+                : 'Saving app files…'}
+            </p>
+            <p>
+              {cachedCandidatesCount} {isUrdu ? 'امیدوار محفوظ' : 'candidates saved'} • {cachedVotersCount}{' '}
+              {isUrdu ? 'ووٹر محفوظ' : 'voters saved'}
+              {appMode === 'device' &&
+                (isUrdu ? ' — تمام ڈیٹا اسی ڈیوائس پر ہے' : ' — all data lives on this device')}
+            </p>
+            {lastSyncTime && (
+              <p className="inline-flex items-center gap-1.5">
+                <RefreshCw className="w-3.5 h-3.5" />
+                {isUrdu ? 'آخری تیاری: ' : 'Last prepared: '}
+                {lastSyncTime.toLocaleDateString()} {lastSyncTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </p>
-              <p className={`text-xs sm:text-sm font-semibold mt-1 ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>
+            )}
+          </div>
+
+          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={handleInstall}
+              disabled={isInstalled}
+              className={`py-3 px-4 rounded-2xl font-black text-sm flex items-center justify-center gap-2 transition ${
+                isInstalled
+                  ? 'bg-emerald-600/15 border border-emerald-500/50 text-emerald-500 cursor-default'
+                  : 'bg-blue-600 hover:bg-blue-500 text-white cursor-pointer active:scale-[0.98]'
+              }`}
+            >
+              {isInstalled ? <CheckCircle2 className="w-5 h-5" /> : <Download className="w-5 h-5" />}
+              <span>{isInstalled ? (isUrdu ? 'ایپ انسٹال ہے' : 'App Installed') : isUrdu ? 'ایپ انسٹال کریں' : 'Install App'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handlePrepareOffline}
+              disabled={!isOnline || isPreparingOffline}
+              className={`py-3 px-4 rounded-2xl font-black text-sm flex items-center justify-center gap-2 transition border ${
+                !isOnline || isPreparingOffline
+                  ? isLight
+                    ? 'bg-slate-100 border-slate-300 text-slate-400 cursor-not-allowed'
+                    : 'bg-slate-900 border-slate-700 text-slate-500 cursor-not-allowed'
+                  : 'bg-emerald-600 hover:bg-emerald-500 border-emerald-400 text-white cursor-pointer active:scale-[0.98]'
+              }`}
+            >
+              {isPreparingOffline ? <RefreshCw className="w-5 h-5 animate-spin" /> : <CloudDownload className="w-5 h-5" />}
+              <span>
+                {isPreparingOffline
+                  ? isUrdu
+                    ? 'تیار ہو رہا ہے…'
+                    : 'Preparing…'
+                  : isUrdu
+                  ? 'ڈیوائس تیار کریں'
+                  : 'Prepare This Device'}
+              </span>
+            </button>
+          </div>
+
+          {!isOnline && (
+            <div className="mt-4 p-3 rounded-2xl bg-amber-500/10 border border-amber-500/40 text-amber-600 dark:text-amber-300 text-xs sm:text-sm font-bold flex gap-2.5">
+              <Info className="w-5 h-5 shrink-0" />
+              <span>
                 {isUrdu
-                  ? 'تمام ووٹر، ووٹ اور نتائج صرف اسی ڈیوائس میں محفوظ ہوتے ہیں۔ کوئی ڈمی ووٹر شامل نہیں — افسر خود ووٹر درج کرتا ہے۔'
-                  : 'All voters, votes and results are stored only on this device. No dummy voters are included — the officer enrolls each voter.'}
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => {
-                    cyberSound.playClick();
-                    onGoToEnroll();
-                  }}
-                  className="py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs sm:text-sm flex items-center gap-2 cursor-pointer active:scale-95"
-                >
-                  <UserPlus className="w-4 h-4" />
-                  <span>{isUrdu ? 'ووٹر درج کریں' : 'Enroll Voters'}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleSwitchMode('server')}
-                  className={`py-2.5 px-4 rounded-xl font-black text-xs sm:text-sm border-2 cursor-pointer active:scale-95 ${isLight ? 'border-slate-300 text-slate-600 hover:bg-slate-100' : 'border-slate-600 text-slate-300 hover:bg-slate-800'}`}
-                >
-                  {isUrdu ? 'سرور موڈ پر جائیں' : 'Switch to Server Mode'}
-                </button>
-              </div>
-            </>
-          ) : (
-            <>
-              <p className={`text-sm sm:text-base font-black ${isLight ? 'text-slate-700' : 'text-slate-200'}`}>
-                {isUrdu ? 'سرور موڈ آن ہے' : 'Server Mode is ON'}
-              </p>
-              <p className={`text-xs sm:text-sm font-semibold mt-1 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
-                {isUrdu
-                  ? 'ڈیٹا آن لائن سرور پر محفوظ ہوتا ہے۔ ایکسپو ڈیمو کے لیے ڈیوائس موڈ بہتر ہے — مکمل آف لائن چلتا ہے۔'
-                  : 'Data is stored on the online server. For the expo demo, Device Mode is better — it runs fully offline on this device.'}
-              </p>
-              <button
-                type="button"
-                onClick={() => handleSwitchMode('device')}
-                className="mt-3 py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs sm:text-sm cursor-pointer active:scale-95"
-              >
-                {isUrdu ? 'ڈیوائس موڈ (آف لائن ڈیمو) پر جائیں' : 'Switch to Device Mode (Offline Demo)'}
-              </button>
-            </>
+                  ? 'آپ آف لائن ہیں۔ تیاری صرف آن لائن رہتے ہوئے ہو سکتی ہے؛ پہلے سے محفوظ ڈیٹا اب بھی استعمال ہو سکتا ہے۔'
+                  : 'You are offline. Preparation can only run online; data already saved on this device can still be used.'}
+              </span>
+            </div>
           )}
-        </div>
 
-        <p className={`mt-4 text-[11px] sm:text-xs font-semibold leading-relaxed ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-          {appMode === 'device'
-            ? isUrdu
-              ? 'نوٹ: ڈیوائس موڈ میں رجسٹریشن، منظوری، ووٹ اور نتائج سب اسی ڈیوائس پر مکمل ہوتے ہیں۔ ووٹر صرف افسر درج کرتا ہے۔'
-              : 'Note: In Device Mode, enrollment, approval, voting and results all complete on this device. Voters are added only by the officer.'
-            : isUrdu
-            ? 'نوٹ: نئی رجسٹریشن اور حتمی ووٹ گنتی کے لیے سرور ضروری ہے۔ آف لائن ووٹ اس ڈیوائس میں محفوظ رہتا ہے، خودکار طور پر گنا نہیں جاتا۔'
-            : 'Note: New registration and final vote counting need the server. An offline vote stays saved on this device — it is not counted automatically.'}
-        </p>
-      </section>
+          {prepareMessage && (
+            <div className="mt-4 p-3 rounded-2xl bg-blue-500/10 border border-blue-500/40 text-blue-700 dark:text-blue-300 text-xs sm:text-sm font-bold">
+              {prepareMessage}
+            </div>
+          )}
+
+          {/* MODE SWITCH — one quiet row */}
+          <div className={`mt-4 pt-4 border-t flex flex-wrap items-center justify-between gap-3 ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
+            <p className={`text-xs sm:text-sm font-bold ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>
+              {appMode === 'device'
+                ? isUrdu
+                  ? 'موڈ: ڈیوائس (مکمل آف لائن ڈیمو)'
+                  : 'Mode: Device — fully offline demo'
+                : isUrdu
+                ? 'موڈ: سرور (آن لائن)'
+                : 'Mode: Server — online'}
+            </p>
+            <button
+              type="button"
+              onClick={() => handleSwitchMode(appMode === 'device' ? 'server' : 'device')}
+              className={`py-2 px-3.5 rounded-xl font-black text-xs border cursor-pointer active:scale-95 ${
+                isLight
+                  ? 'border-slate-300 text-slate-600 hover:bg-slate-100'
+                  : 'border-slate-600 text-slate-300 hover:bg-slate-800'
+              }`}
+            >
+              {appMode === 'device'
+                ? isUrdu
+                  ? 'سرور موڈ پر جائیں'
+                  : 'Switch to Server Mode'
+                : isUrdu
+                ? 'ڈیوائس موڈ پر جائیں'
+                : 'Switch to Device Mode'}
+            </button>
+          </div>
+
+          <p className={`mt-3 text-[11px] sm:text-xs font-semibold leading-relaxed ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+            {appMode === 'device'
+              ? isUrdu
+                ? 'ڈیوائس موڈ میں رجسٹریشن، منظوری، ووٹ اور نتائج سب اسی ڈیوائس پر مکمل ہوتے ہیں۔ ووٹر صرف افسر درج کرتا ہے۔'
+                : 'In Device Mode, enrollment, approval, voting and results all complete on this device. Voters are added only by the officer.'
+              : isUrdu
+              ? 'سرور موڈ میں ڈیٹا آن لائن سرور پر محفوظ ہوتا ہے۔ آف لائن ووٹ اس ڈیوائس میں محفوظ رہتا ہے، خودکار طور پر گنا نہیں جاتا۔'
+              : 'In Server Mode, data is stored on the online server. An offline vote stays saved on this device — it is not counted automatically.'}
+          </p>
+        </section>
+      )}
 
       {/* SIMPLE INSTALL HELP — used when the browser gives no install prompt */}
       {showInstallHelp && (
@@ -519,11 +437,11 @@ export const CastVoteKiosk: React.FC<CastVoteKioskProps> = ({
             <div className="mt-5 space-y-4 text-sm font-semibold">
               <div className={`p-4 rounded-2xl border ${isLight ? 'bg-blue-50 border-blue-100' : 'bg-slate-950 border-slate-800'}`}>
                 <div className="font-black mb-1">Android / Chrome</div>
-                <p>{isUrdu ? 'اوپر دائیں طرف ⋮ مینو دبائیں، پھر “Install app” یا “Add to Home screen” منتخب کریں۔' : 'Tap the ⋮ menu at the top right, then choose “Install app” or “Add to Home screen.”'}</p>
+                <p>{isUrdu ? 'اوپر دائیں طرف ⋮ مینو دبائیں، پھر "Install app" یا "Add to Home screen" منتخب کریں۔' : 'Tap the ⋮ menu at the top right, then choose "Install app" or "Add to Home screen."'}</p>
               </div>
               <div className={`p-4 rounded-2xl border ${isLight ? 'bg-blue-50 border-blue-100' : 'bg-slate-950 border-slate-800'}`}>
                 <div className="font-black mb-1">iPhone / Safari</div>
-                <p>{isUrdu ? 'Share بٹن دبائیں، پھر “Add to Home Screen” منتخب کریں۔' : 'Tap the Share button, then choose “Add to Home Screen.”'}</p>
+                <p>{isUrdu ? 'Share بٹن دبائیں، پھر "Add to Home Screen" منتخب کریں۔' : 'Tap the Share button, then choose "Add to Home Screen."'}</p>
               </div>
               <div className={`p-4 rounded-2xl border ${isLight ? 'bg-blue-50 border-blue-100' : 'bg-slate-950 border-slate-800'}`}>
                 <div className="font-black mb-1">Computer / Chrome</div>

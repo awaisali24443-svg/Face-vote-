@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Sun, Moon, Languages } from 'lucide-react';
 import { Header } from './components/Header';
 import { CheckInView } from './components/CheckInView';
 import { BallotView } from './components/BallotView';
@@ -9,12 +8,9 @@ import { loadFaceApiModels } from './services/faceApi';
 import { isDeviceMode, removeCachedDummyVoters } from './services/deviceMode';
 import { Voter } from './types';
 import { useTheme } from './context/ThemeContext';
-import { useLanguage } from './context/LanguageContext';
-import { cyberSound } from './services/soundEffects';
 
 export default function App() {
-  const { isLight, toggleTheme } = useTheme();
-  const { isUrdu, toggleLanguage } = useLanguage();
+  const { isLight } = useTheme();
   const [currentTab, setCurrentTab] = useState<'checkin' | 'results' | 'admin'>('checkin');
   const [adminSubTab, setAdminSubTab] = useState<AdminTab>('enrollment');
   const [activeBallotVoter, setActiveBallotVoter] = useState<Voter | null>(null);
@@ -79,23 +75,6 @@ export default function App() {
           : 'bg-[#090e17] text-slate-100 selection:bg-blue-500 selection:text-white'
       }`}
     >
-      {/* Institutional Civic Ambient Glows */}
-      <div
-        className={`fixed inset-0 bg-cyber-grid pointer-events-none z-0 ${
-          isLight ? 'opacity-40' : 'opacity-20'
-        }`}
-      />
-      <div
-        className={`fixed -top-40 -left-40 w-96 h-96 rounded-full blur-3xl pointer-events-none z-0 ${
-          isLight ? 'bg-blue-400/10' : 'bg-blue-500/10'
-        }`}
-      />
-      <div
-        className={`fixed -bottom-40 -right-40 w-96 h-96 rounded-full blur-3xl pointer-events-none z-0 ${
-          isLight ? 'bg-emerald-400/10' : 'bg-emerald-500/5'
-        }`}
-      />
-
       {/* Top Navigation Bar */}
       <Header
         currentTab={currentTab}
@@ -132,7 +111,7 @@ export default function App() {
 
             {currentTab === 'results' && (
               <PublicResultsBallotView
-                onBackToKiosk={() => setCurrentTab('checkin')}
+                onGoToKiosk={() => setCurrentTab('checkin')}
               />
             )}
 
@@ -155,51 +134,6 @@ export default function App() {
             : 'border-blue-950/60 bg-slate-950/70'
         }`}
       />
-
-      {/* Floating Quick Controls - Icons only */}
-      <aside aria-label="Quick Controls" className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 flex items-center space-x-2">
-        {/* Floating Language Switcher */}
-        <button
-          id="floating-language-toggle"
-          type="button"
-          onClick={() => {
-            cyberSound.playClick();
-            toggleLanguage();
-          }}
-          aria-label="Language Toggle"
-          title={isUrdu ? 'English' : 'اردو'}
-          className={`w-11 h-11 sm:w-12 sm:h-12 rounded-full border shadow-2xl flex items-center justify-center cursor-pointer transition-all duration-200 transform hover:scale-105 active:scale-95 ${
-            isLight
-              ? 'bg-white border-emerald-300 text-emerald-800 hover:bg-emerald-50 shadow-[0_4px_20px_rgba(16,185,129,0.2)]'
-              : 'bg-emerald-950/90 border-emerald-500 text-emerald-200 hover:bg-emerald-900 shadow-[0_4px_25px_rgba(16,185,129,0.3)]'
-          }`}
-        >
-          <Languages className="w-5 h-5 text-emerald-500 shrink-0" />
-        </button>
-
-        {/* Floating Theme Switch */}
-        <button
-          id="floating-theme-switch"
-          type="button"
-          onClick={() => {
-            cyberSound.playClick();
-            toggleTheme();
-          }}
-          aria-label="Theme Toggle"
-          title="Theme Toggle"
-          className={`w-11 h-11 sm:w-12 sm:h-12 rounded-full border shadow-2xl flex items-center justify-center cursor-pointer transition-all duration-200 transform hover:scale-105 active:scale-95 ${
-            isLight
-              ? 'bg-slate-900 border-slate-700 text-slate-100 hover:bg-slate-800 shadow-[0_4px_20px_rgba(15,23,42,0.4)]'
-              : 'bg-amber-950/90 border-amber-400 text-amber-200 hover:bg-amber-900 shadow-[0_4px_25px_rgba(245,158,11,0.35)]'
-          }`}
-        >
-          {isLight ? (
-            <Moon className="w-5 h-5 text-cyan-400 shrink-0" />
-          ) : (
-            <Sun className="w-5 h-5 text-amber-400 shrink-0" />
-          )}
-        </button>
-      </aside>
     </div>
   );
 }

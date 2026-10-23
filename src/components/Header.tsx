@@ -1,12 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   ScanFace,
-  UserPlus,
   Vote,
   ShieldCheck,
   Trophy,
-  Volume2,
-  VolumeX,
   Sun,
   Moon,
   Languages,
@@ -14,7 +11,6 @@ import {
 import { cyberSound } from '../services/soundEffects';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
-import { PWAInstallBanner } from './PWAInstallBanner';
 
 interface HeaderProps {
   currentTab: 'checkin' | 'results' | 'admin';
@@ -29,15 +25,6 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const { isLight, toggleTheme } = useTheme();
   const { isUrdu, toggleLanguage } = useLanguage();
-  const [soundActive, setSoundActive] = useState<boolean>(cyberSound.enabled);
-
-  const toggleSound = () => {
-    cyberSound.enabled = !soundActive;
-    setSoundActive(!soundActive);
-    if (!soundActive) {
-      cyberSound.playClick();
-    }
-  };
 
   const handleToggleTheme = () => {
     cyberSound.playClick();
@@ -153,26 +140,10 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="hidden md:inline">{isUrdu ? 'ڈیسک' : 'Admin'}</span>
             </button>
 
-            {/* Quick Action: Register Voter */}
-            <button
-              id="nav-enroll-quick-btn"
-              onClick={() => handleTabClick('admin', 'enrollment')}
-              className={`flex items-center space-x-1.5 px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer border ${
-                isLight
-                  ? 'bg-amber-50 hover:bg-amber-100 text-amber-950 border-amber-300 shadow-sm'
-                  : 'bg-amber-950/40 hover:bg-amber-900/60 text-amber-300 border-amber-600/40'
-              }`}
-            >
-              <UserPlus className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-              <span className="hidden sm:inline">{isUrdu ? 'نیا ووٹر' : 'Register'}</span>
-            </button>
           </nav>
 
-          {/* Controls: PWA/Offline Status, Language, Theme & Sound */}
+          {/* Controls: Language & Theme only — everything else lives on the pages */}
           <div className="flex items-center space-x-1.5 sm:space-x-2">
-            {/* PWA & Offline Status */}
-            <PWAInstallBanner />
-
             {/* Language Toggle */}
             <button
               id="lang-toggle-btn"
@@ -205,28 +176,6 @@ export const Header: React.FC<HeaderProps> = ({
                 <Moon className="w-4 h-4 text-slate-700" />
               ) : (
                 <Sun className="w-4 h-4 text-amber-400" />
-              )}
-            </button>
-
-            {/* Sound Toggle */}
-            <button
-              id="sound-toggle-btn"
-              onClick={toggleSound}
-              aria-label="Sound Toggle"
-              className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl border transition cursor-pointer flex items-center justify-center shadow-sm ${
-                soundActive
-                  ? isLight
-                    ? 'bg-blue-50 border-blue-300 text-blue-700'
-                    : 'bg-blue-950 border-blue-600 text-blue-300'
-                  : isLight
-                  ? 'bg-slate-100 border-slate-300 text-slate-500'
-                  : 'bg-slate-900 border-slate-700 text-slate-600'
-              }`}
-            >
-              {soundActive ? (
-                <Volume2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-              ) : (
-                <VolumeX className="w-4 h-4 text-slate-400" />
               )}
             </button>
           </div>
