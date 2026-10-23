@@ -18,6 +18,8 @@ import { cyberSound } from '../services/soundEffects';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { usePWA } from '../hooks/usePWA';
+import { getAppMode, setAppMode, type AppMode } from '../services/deviceMode';
+import { ensureTestVotersSeeded } from '../services/testVoters';
 
 interface CastVoteKioskProps {
   onStartCastVote: () => void;
@@ -51,6 +53,9 @@ export const CastVoteKiosk: React.FC<CastVoteKioskProps> = ({
   } = usePWA();
   const [showInstallHelp, setShowInstallHelp] = useState<boolean>(false);
   const [prepareMessage, setPrepareMessage] = useState<string | null>(null);
+  const [appMode, setAppModeState] = useState<AppMode>(() => getAppMode());
+  const [testVoterMessage, setTestVoterMessage] = useState<string | null>(null);
+  const [isLoadingTestVoters, setIsLoadingTestVoters] = useState<boolean>(false);
 
   const isOfflineSavedVote =
     !!lastVoteRecordedMessage &&
@@ -102,6 +107,43 @@ export const CastVoteKiosk: React.FC<CastVoteKioskProps> = ({
           : `Ballot list saved (${result.candidates} candidates). The voter list downloads only after officer sign-in, to protect biometric data.`
       );
     }
+  };
+
+  const handleLoadTestVoters = async () => {
+    cyberSound.playClick();
+    setIsLoadingTestVoters(true);
+    setTestVoterMessage(null);
+    try {
+      const result = await ensureTestVotersSeeded();
+      if (result.seeded > 0) {
+        setTestVoterMessage(
+          isUrdu
+            ? `${result.seeded} ٹیسٹ ووٹر اس ڈیوائس پر تیار ہیں۔ چیک اِن میں ان کی تصویر کیمرے کے سامنے رکھ کر ٹیسٹ کریں۔`
+            : `${result.seeded} test voters are ready on this device. At Check-In, hold a test voter's photo up to the camera to try the full flow.`
+        );
+      } else {
+        setTestVoterMessage(
+          isUrdu
+            ? 'ٹیسٹ ووٹر پہلے سے اس ڈیوائس پر موجود ہیں۔'
+            : 'Test voters are already loaded on this device.'
+        );
+      }
+    } catch {
+      setTestVoterMessage(
+        isUrdu
+          ? 'ٹیسٹ ووٹر لوڈ نہیں ہو سکے — صفحہ دوبارہ لوڈ کر کے کوشش کریں۔'
+          : 'Test voters could not be loaded — reload the page and try again.'
+      );
+    } finally {
+      setIsLoadingTestVoters(false);
+    }
+  };
+
+  const handleSwitchMode = (mode: AppMode) => {
+    cyberSound.playClick();
+    setAppMode(mode);
+    setAppModeState(mode);
+    window.location.reload();
   };
 
   return (
@@ -420,6 +462,61 @@ export const CastVoteKiosk: React.FC<CastVoteKioskProps> = ({
             </span>
           </div>
         )}
+
+        {/* DEVICE MODE — EXPO DEMO PANEL */}
+        <div className={`mt-5 p-4 rounded-2xl border-2 ${appMode === 'device' ? 'bg-emerald-500/10 border-emerald-500/40' : isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-900 border-slate-700'}`}>
+          {appMode === 'device' ? (
+            <>
+              <p className="text-sm sm:text-base font-black text-emerald-600 dark:text-emerald-400">
+                {isUrdu ? 'ایکسپو ڈیمو موڈ: مکمل آف لائن' : 'EXPO DEMO MODE — Fully Offline'}
+              </p>
+              <p className={`text-xs sm:text-sm font-semibold mt-1 ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>
+                {isUrdu
+                  ? 'تمام ووٹر، ووٹ اور نتائج صرف اسی ڈیوائس میں محفوظ ہوتے ہیں۔ نہ سرور چاہیے، نہ انٹرنیٹ۔'
+                  : 'All voters, votes and results are stored only on this device. No server, no internet needed.'}
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2.5">
+                <button
+                  type="button"
+                  onClick={handleLoadTestVoters}
+                  disabled={isLoadingTestVoters}
+                  className="py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs sm:text-sm flex items-center gap-2 cursor-pointer active:scale-95 disabled:opacity-60"
+                >
+                  {isLoadingTestVoters ? <RefreshCw className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
+                  <span>{isUrdu ? 'ٹیسٹ ووٹر لوڈ کریں' : 'Load Test Voters'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSwitchMode('server')}
+                  className={`py-2.5 px-4 rounded-xl font-black text-xs sm:text-sm border-2 cursor-pointer active:scale-95 ${isLight ? 'border-slate-300 text-slate-600 hover:bg-slate-100' : 'border-slate-600 text-slate-300 hover:bg-slate-800'}`}
+                >
+                  {isUrdu ? 'سرور موڈ پر جائیں' : 'Switch to Server Mode'}
+                </button>
+              </div>
+              {testVoterMessage && (
+                <p className="mt-3 text-xs sm:text-sm font-bold text-emerald-700 dark:text-emerald-300">{testVoterMessage}</p>
+              )}
+            </>
+          ) : (
+            <>
+              <p className={`text-sm sm:text-base font-black ${isLight ? 'text-slate-700' : 'text-slate-200'}`}>
+                {isUrdu ? 'سرور موڈ آن ہے' : 'Server Mode is ON'}
+              </p>
+              <p className={`text-xs sm:text-sm font-semibold mt-1 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                {isUrdu
+                  ? 'ڈیٹا آن لائن سرور پر محفوظ ہوتا ہے۔ ایکسپو ڈیمو کے لیے ڈیوائس موڈ بہتر ہے — مکمل آف لائن چلتا ہے۔'
+                  : 'Data is stored on the online server. For the expo demo, Device Mode is better — it runs fully offline on this device.'}
+              </p>
+              <button
+                type="button"
+                onClick={() => handleSwitchMode('device')}
+                className="mt-3 py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs sm:text-sm cursor-pointer active:scale-95"
+              >
+                {isUrdu ? 'ڈیوائس موڈ (آف لائن ڈیمو) پر جائیں' : 'Switch to Device Mode (Offline Demo)'}
+              </button>
+            </>
+          )}
+        </div>
 
         <p className={`mt-4 text-[11px] sm:text-xs font-semibold leading-relaxed ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
           {isUrdu
