@@ -12,6 +12,7 @@ import {
   FileText,
   MapPin,
   Fingerprint,
+  UserPlus,
 } from 'lucide-react';
 import { Voter, ElectionConfig } from '../types';
 import { cyberSound } from '../services/soundEffects';
@@ -23,12 +24,14 @@ interface AdminVoterApprovalDeskProps {
   voters: Voter[];
   config: ElectionConfig | null;
   onRefresh: () => void;
+  onGoToEnroll?: () => void;
   onInspectEmbedding: (voter: Voter) => void;
 }
 
 export const AdminVoterApprovalDesk: React.FC<AdminVoterApprovalDeskProps> = ({
   voters,
   onRefresh,
+  onGoToEnroll,
   onInspectEmbedding,
 }) => {
   const { isLight } = useTheme();
@@ -124,7 +127,7 @@ export const AdminVoterApprovalDesk: React.FC<AdminVoterApprovalDeskProps> = ({
                 cyberSound.playClick();
                 setFilter('all');
               }}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+              className={`px-4 min-h-[40px] rounded-full text-xs font-bold transition cursor-pointer ${
                 filter === 'all'
                   ? 'bg-cyan-500 text-slate-950 font-black shadow-md'
                   : isLight
@@ -140,7 +143,7 @@ export const AdminVoterApprovalDesk: React.FC<AdminVoterApprovalDeskProps> = ({
                 cyberSound.playClick();
                 setFilter('eligible');
               }}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1.5 transition cursor-pointer ${
+              className={`px-4 min-h-[40px] rounded-full text-xs font-bold flex items-center space-x-1.5 transition cursor-pointer ${
                 filter === 'eligible'
                   ? 'bg-emerald-500 text-slate-950 font-black shadow-md'
                   : isLight
@@ -157,7 +160,7 @@ export const AdminVoterApprovalDesk: React.FC<AdminVoterApprovalDeskProps> = ({
                 cyberSound.playClick();
                 setFilter('voted');
               }}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1.5 transition cursor-pointer ${
+              className={`px-4 min-h-[40px] rounded-full text-xs font-bold flex items-center space-x-1.5 transition cursor-pointer ${
                 filter === 'voted'
                   ? 'bg-indigo-500 text-white font-black shadow-md'
                   : isLight
@@ -325,7 +328,7 @@ export const AdminVoterApprovalDesk: React.FC<AdminVoterApprovalDeskProps> = ({
                         cyberSound.playClick();
                         onInspectEmbedding(voter);
                       }}
-                      className={`px-2.5 py-1.5 rounded-lg border text-[11px] font-bold flex items-center space-x-1.5 cursor-pointer transition ${
+                      className={`px-3.5 min-h-[40px] rounded-xl border text-[11px] font-bold flex items-center space-x-1.5 cursor-pointer transition ${
                         isLight
                           ? 'bg-slate-100 hover:bg-slate-200 border-slate-300 text-cyan-800'
                           : 'bg-slate-950 border-cyan-700/60 hover:border-cyan-400 text-cyan-300'
@@ -340,7 +343,7 @@ export const AdminVoterApprovalDesk: React.FC<AdminVoterApprovalDeskProps> = ({
                         cyberSound.playClick();
                         setPrintVoterModal(voter);
                       }}
-                      className={`px-2.5 py-1.5 rounded-lg border text-[11px] font-bold flex items-center space-x-1.5 cursor-pointer transition ${
+                      className={`px-3.5 min-h-[40px] rounded-xl border text-[11px] font-bold flex items-center space-x-1.5 cursor-pointer transition ${
                         isLight
                           ? 'bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-800'
                           : 'bg-slate-950 border-slate-700 hover:border-slate-500 text-slate-200'
@@ -427,6 +430,20 @@ export const AdminVoterApprovalDesk: React.FC<AdminVoterApprovalDeskProps> = ({
           voter={printVoterModal}
           onClose={() => setPrintVoterModal(null)}
         />
+      )}
+
+      {/* Floating action button: enroll a new voter (clears the bottom nav) */}
+      {onGoToEnroll && (
+        <button
+          onClick={() => {
+            cyberSound.playClick();
+            onGoToEnroll();
+          }}
+          className="fixed bottom-24 right-4 z-30 flex items-center gap-2 pl-4 pr-5 h-14 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm shadow-xl shadow-emerald-900/30 transition active:scale-95 cursor-pointer"
+        >
+          <UserPlus className="w-6 h-6" />
+          <span>{isUrdu ? 'نیا ووٹر' : 'Enroll Voter'}</span>
+        </button>
       )}
     </div>
   );

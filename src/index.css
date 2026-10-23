@@ -141,8 +141,7 @@
 }
 
 /* Authentic Print Stylesheet for ECP Voter Slips, Form-47, and Identity Cards */
-@media print {
-  body {
+@media print {  body {
     background: #ffffff !important;
     color: #000000 !important;
   }
@@ -167,4 +166,41 @@
   .print-only {
     display: block !important;
   }
+}
+
+/* ============================================================
+   Android-app feel (phone-first overhaul)
+   - No blue tap flash, no rubber-band scroll chaining
+   - Form controls are finger-sized with 16px text on phones
+     (16px also stops mobile browsers auto-zooming on focus)
+   ============================================================ */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  overscroll-behavior-y: none;
+}
+
+@media (max-width: 768px) {
+  input[type="text"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="date"],
+  input[type="password"],
+  input[type="email"],
+  input:not([type]),
+  select,
+  textarea {
+    font-size: 16px !important;
+    min-height: 48px;
+  }
+  textarea {
+    min-height: 72px;
+  }
+}
+
+/* Bottom navigation clearance helper (notch / gesture bar) */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }

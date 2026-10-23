@@ -195,7 +195,7 @@ export const AdminCandidateStudio: React.FC<AdminCandidateStudioProps> = ({
             {/* Ballot Lock Toggle */}
             <button
               onClick={handleToggleBallotLock}
-              className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center space-x-2 transition cursor-pointer border shadow-md ${
+              className={`px-4 min-h-[48px] rounded-xl font-bold text-xs flex items-center space-x-2 transition cursor-pointer border shadow-md ${
                 isBallotLocked
                   ? isLight
                     ? 'bg-rose-100 border-rose-400 text-rose-800'
@@ -238,7 +238,7 @@ export const AdminCandidateStudio: React.FC<AdminCandidateStudioProps> = ({
                 setIsImageScannerOpen(true);
               }}
               disabled={isBallotLocked}
-              className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center space-x-2 transition cursor-pointer border shadow-md ${
+              className={`px-4 min-h-[48px] rounded-xl font-bold text-xs flex items-center space-x-2 transition cursor-pointer border shadow-md ${
                 isBallotLocked
                   ? 'bg-slate-800 text-slate-500 cursor-not-allowed border-slate-700'
                   : isLight
@@ -262,7 +262,7 @@ export const AdminCandidateStudio: React.FC<AdminCandidateStudioProps> = ({
                 setIsModalOpen(true);
               }}
               disabled={isBallotLocked}
-              className={`px-5 py-2.5 rounded-xl font-black text-xs flex items-center space-x-2 transition cursor-pointer ${
+              className={`px-5 min-h-[48px] rounded-xl font-black text-xs flex items-center space-x-2 transition cursor-pointer ${
                 isBallotLocked
                   ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
                   : 'bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white shadow-[0_0_20px_rgba(34,211,238,0.4)] border border-cyan-300'

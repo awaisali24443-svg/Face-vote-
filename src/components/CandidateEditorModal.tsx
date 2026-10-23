@@ -178,8 +178,8 @@ export const CandidateEditorModal: React.FC<CandidateEditorModalProps> = ({
   const activeSymbol = getSymbolById(signIcon);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto">
-      <div className={`relative w-full max-w-2xl border-2 rounded-3xl shadow-2xl my-8 overflow-hidden font-mono ${
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto">
+      <div className={`relative w-full max-w-2xl border-2 rounded-t-3xl sm:rounded-3xl shadow-2xl my-0 sm:my-8 overflow-hidden ${
         isLight
           ? 'bg-white border-blue-500 shadow-[0_0_50px_rgba(59,130,246,0.25)]'
           : 'bg-slate-900 border-blue-500/70 shadow-[0_0_50px_rgba(59,130,246,0.3)]'
@@ -202,7 +202,8 @@ export const CandidateEditorModal: React.FC<CandidateEditorModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className={`p-2 rounded-xl transition cursor-pointer ${
+            aria-label="Close editor"
+            className={`w-11 h-11 flex items-center justify-center rounded-full transition cursor-pointer shrink-0 ${
               isLight ? 'bg-slate-200 hover:bg-slate-300 text-slate-700' : 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white'
             }`}
           >
@@ -224,7 +225,7 @@ export const CandidateEditorModal: React.FC<CandidateEditorModalProps> = ({
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[75vh] overflow-y-auto">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-5 max-h-[calc(100dvh-64px)] sm:max-h-[75vh] overflow-y-auto">
           {/* Candidate Name & Party */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -528,13 +529,13 @@ export const CandidateEditorModal: React.FC<CandidateEditorModalProps> = ({
           </div>
 
           {/* Footer Actions */}
-          <div className={`flex items-center justify-end space-x-3 pt-4 border-t ${
+          <div className={`flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3 pt-4 border-t ${
             isLight ? 'border-slate-200' : 'border-blue-950'
           }`}>
             <button
               type="button"
               onClick={onClose}
-              className={`px-5 py-2.5 rounded-xl font-bold text-xs cursor-pointer ${
+              className={`px-5 min-h-[48px] rounded-xl font-bold text-sm cursor-pointer ${
                 isLight ? 'bg-slate-200 hover:bg-slate-300 text-slate-700' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
               }`}
             >
@@ -543,7 +544,7 @@ export const CandidateEditorModal: React.FC<CandidateEditorModalProps> = ({
             <button
               type="submit"
               disabled={isSaving || isBallotLocked}
-              className={`px-7 py-2.5 rounded-xl font-bold text-xs flex items-center space-x-2 transition cursor-pointer ${
+              className={`px-7 min-h-[48px] rounded-xl font-bold text-sm flex items-center justify-center space-x-2 transition cursor-pointer ${
                 isSaving || isBallotLocked
                   ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
                   : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-[0_0_20px_rgba(59,130,246,0.4)] border border-blue-400'

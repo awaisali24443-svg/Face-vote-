@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
+import { BottomNav } from './components/BottomNav';
 import { CheckInView } from './components/CheckInView';
 import { BallotView } from './components/BallotView';
 import { PublicResultsBallotView } from './components/PublicResultsBallotView';
@@ -15,31 +16,17 @@ export default function App() {
   const [adminSubTab, setAdminSubTab] = useState<AdminTab>('enrollment');
   const [activeBallotVoter, setActiveBallotVoter] = useState<Voter | null>(null);
   const [ballotToken, setBallotToken] = useState<string | null>(null);
-  const [modelsReady, setModelsReady] = useState<boolean>(false);
-  const [threshold, setThreshold] = useState<number>(0.6);
   const [voteRecordedMessage, setVoteRecordedMessage] = useState<string | null>(null);
 
   // Pre-load face-api models on initial mount for instant camera readiness
   useEffect(() => {
-    loadFaceApiModels()
-      .then(() => setModelsReady(true))
-      .catch((err) => console.warn('Model initialization notice:', err));
+    loadFaceApiModels().catch((err) => console.warn('Model initialization notice:', err));
   }, []);
 
   // No dummy voters: the roll starts empty and the officer enrolls real
   // voters manually. Remove any dummy records left by the earlier demo build.
   useEffect(() => {
     if (isDeviceMode()) removeCachedDummyVoters();
-  }, []);
-
-  // Fetch initial threshold configuration
-  useEffect(() => {
-    fetch('/api/config')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.threshold) setThreshold(data.threshold);
-      })
-      .catch((err) => console.warn('Threshold config notice:', err));
   }, []);
 
   // Handler to enter the secret ballot screen after successful check-in
@@ -75,20 +62,16 @@ export default function App() {
           : 'bg-[#090e17] text-slate-100 selection:bg-blue-500 selection:text-white'
       }`}
     >
-      {/* Top Navigation Bar */}
+      {/* Top app bar */}
       <Header
-        currentTab={currentTab}
-        onSelectTab={(tab, subTab) => {
+        onBrandClick={() => {
           setActiveBallotVoter(null);
-          if (subTab) setAdminSubTab(subTab);
-          setCurrentTab(tab);
+          setCurrentTab('checkin');
         }}
-        modelsReady={modelsReady}
-        threshold={threshold}
       />
 
-      {/* Main Content Area */}
-      <main className="flex-1 flex flex-col items-center justify-start p-2 sm:p-4 md:p-6 w-full relative z-10">
+      {/* Main Content Area — bottom padding clears the fixed bottom nav */}
+      <main className={`flex-1 flex flex-col items-center justify-start p-2 sm:p-4 md:p-6 w-full relative z-10 ${activeBallotVoter ? '' : 'pb-24'}`}>
         {/* If an eligible voter has checked in and is on the ballot screen */}
         {activeBallotVoter ? (
           <BallotView
@@ -125,15 +108,19 @@ export default function App() {
         )}
       </main>
 
-      {/* Footer - No text, no numbers */}
-      <footer
-        id="main-app-footer"
-        className={`py-3 border-t relative z-10 transition-colors ${
-          isLight
-            ? 'border-blue-200/60 bg-white/70'
-            : 'border-blue-950/60 bg-slate-950/70'
-        }`}
-      />
+      {/* Bottom navigation (Android pattern) — hidden while a ballot is open */}
+      {!activeBallotVoter && (
+        <BottomNav
+          currentTab={currentTab}
+          adminSubTab={adminSubTab}
+          onSelectTab={(tab, subTab) => {
+            setActiveBallotVoter(null);
+            setBallotToken(null);
+            if (subTab) setAdminSubTab(subTab);
+            setCurrentTab(tab);
+          }}
+        />
+      )}
     </div>
   );
 }

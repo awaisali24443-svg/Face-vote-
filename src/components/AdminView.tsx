@@ -42,6 +42,12 @@ export const AdminView: React.FC<AdminViewProps> = ({ initialSubTab = 'enrollmen
   const { isLight } = useTheme();
   const { isUrdu } = useLanguage();
   const [activeSubTab, setActiveSubTab] = useState<AdminTab>(initialSubTab);
+
+  // Bottom navigation can ask for a different desk while Admin is already
+  // open (e.g. tapping "Register") — follow the latest request.
+  useEffect(() => {
+    setActiveSubTab(initialSubTab);
+  }, [initialSubTab]);
   const [stats, setStats] = useState<BallotStats | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -206,7 +212,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ initialSubTab = 'enrollmen
 
   if (isLocked) {
     return (
-      <div className="w-full max-w-md mx-auto px-4 py-16 font-mono">
+      <div className="w-full max-w-md mx-auto px-4 py-16">
         <div className={`p-8 rounded-3xl border-2 shadow-2xl text-center space-y-6 relative overflow-hidden ${
           isLight
             ? 'bg-white border-rose-500 shadow-[0_0_40px_rgba(244,63,94,0.2)]'
@@ -298,7 +304,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ initialSubTab = 'enrollmen
   }
 
   return (
-    <div className="w-full max-w-6xl mx-auto px-4 py-6 space-y-6 font-mono">
+    <div className="w-full max-w-6xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-5 sm:space-y-6">
       {/* Top Banner & Refresh */}
       <div className={`flex flex-col sm:flex-row sm:items-center sm:justify-between pb-5 border-b gap-4 ${isLight ? 'border-slate-300' : 'border-cyan-950'}`}>
         <div>
@@ -335,7 +341,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ initialSubTab = 'enrollmen
               setIsLocked(true);
             }}
             title="Lock admin panel"
-            className={`px-3 py-2 rounded-xl border text-xs font-bold flex items-center space-x-1.5 transition cursor-pointer ${
+            className={`px-3.5 min-h-[44px] rounded-xl border text-xs font-bold flex items-center space-x-1.5 transition cursor-pointer ${
               isLight
                 ? 'bg-white hover:bg-slate-100 text-slate-700 hover:text-rose-600 border-slate-300 shadow-sm'
                 : 'bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-rose-400 border-slate-800'
@@ -350,7 +356,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ initialSubTab = 'enrollmen
               cyberSound.playClick();
               fetchStats();
             }}
-            className={`px-4 py-2 rounded-xl border font-bold text-xs flex items-center space-x-2 transition cursor-pointer shadow-md ${
+            className={`px-4 min-h-[44px] rounded-xl border font-bold text-xs flex items-center space-x-2 transition cursor-pointer shadow-md ${
               isLight
                 ? 'bg-white hover:bg-slate-100 text-cyan-800 border-cyan-400'
                 : 'bg-slate-900 hover:bg-slate-800 text-cyan-300 border-cyan-500/50'
@@ -362,82 +368,38 @@ export const AdminView: React.FC<AdminViewProps> = ({ initialSubTab = 'enrollmen
         </div>
       </div>
 
-      {/* Primary Sub-Navigation Tabs */}
-      <div className={`flex flex-wrap items-center gap-2 p-1.5 rounded-2xl border ${isLight ? 'bg-slate-100 border-slate-300' : 'bg-slate-950 border-slate-800'}`}>
-        {/* Tab 0: Citizen Biometric Enrollment */}
-        <button
-          onClick={() => {
-            cyberSound.playClick();
-            setActiveSubTab('enrollment');
-          }}
-          className={`flex-1 min-w-[180px] px-4 py-3 rounded-xl font-bold text-xs tracking-wider uppercase transition flex items-center justify-center space-x-2 cursor-pointer ${
-            activeSubTab === 'enrollment'
-              ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-[0_0_20px_rgba(16,185,129,0.4)] border border-emerald-400/80'
-              : isLight
-              ? 'text-slate-700 hover:text-emerald-800 hover:bg-white'
-              : 'text-slate-400 hover:text-emerald-300 hover:bg-slate-900'
-          }`}
-        >
-          <UserPlus className={`w-4 h-4 ${activeSubTab === 'enrollment' ? 'text-white' : isLight ? 'text-emerald-700' : 'text-emerald-400'}`} />
-          <span>{isUrdu ? 'ووٹر رجسٹریشن' : 'Biometric Enrollment'}</span>
-        </button>
-
-        {/* Tab 1: Voter Registry & Roster */}
-        <button
-          onClick={() => {
-            cyberSound.playClick();
-            setActiveSubTab('approvals');
-          }}
-          className={`flex-1 min-w-[180px] px-4 py-3 rounded-xl font-bold text-xs tracking-wider uppercase transition flex items-center justify-center space-x-2 cursor-pointer ${
-            activeSubTab === 'approvals'
-              ? 'bg-gradient-to-r from-cyan-600 to-indigo-600 text-white shadow-[0_0_20px_rgba(34,211,238,0.4)] border border-cyan-400/80'
-              : isLight
-              ? 'text-slate-700 hover:text-cyan-800 hover:bg-white'
-              : 'text-slate-400 hover:text-cyan-300 hover:bg-slate-900'
-          }`}
-        >
-          <UserCheck className={`w-4 h-4 ${activeSubTab === 'approvals' ? 'text-white' : isLight ? 'text-cyan-700' : 'text-cyan-300'}`} />
-          <span>{isUrdu ? 'انتخابی ووٹر لسٹ' : 'Voter Roll & Registry'}</span>
-        </button>
-
-        {/* Tab 2: Ballot Paper & Candidate Studio */}
-        <button
-          onClick={() => {
-            cyberSound.playClick();
-            setActiveSubTab('candidates');
-          }}
-          className={`flex-1 min-w-[180px] px-4 py-3 rounded-xl font-bold text-xs tracking-wider uppercase transition flex items-center justify-center space-x-2 cursor-pointer ${
-            activeSubTab === 'candidates'
-              ? 'bg-gradient-to-r from-cyan-600 to-indigo-600 text-white shadow-[0_0_20px_rgba(34,211,238,0.4)] border border-cyan-400/80'
-              : isLight
-              ? 'text-slate-700 hover:text-cyan-800 hover:bg-white'
-              : 'text-slate-400 hover:text-cyan-300 hover:bg-slate-900'
-          }`}
-        >
-          <FileText className={`w-4 h-4 ${activeSubTab === 'candidates' ? 'text-white' : isLight ? 'text-cyan-700' : 'text-cyan-300'}`} />
-          <span>{isUrdu ? 'بیلٹ و امیدواران' : 'Ballot & Candidates'}</span>
-          <span className={`text-[10px] px-2 py-0.5 rounded border ${isLight ? 'bg-slate-200 text-slate-800 border-slate-300' : 'text-cyan-300 bg-slate-900 border-slate-700'}`}>
-            {stats?.candidates?.length || 5} {isUrdu ? 'امیدوار' : 'Nominees'}
-          </span>
-        </button>
-
-        {/* Tab 3: Audit Logs & Telemetry Hub */}
-        <button
-          onClick={() => {
-            cyberSound.playClick();
-            setActiveSubTab('audit');
-          }}
-          className={`flex-1 min-w-[180px] px-4 py-3 rounded-xl font-bold text-xs tracking-wider uppercase transition flex items-center justify-center space-x-2 cursor-pointer ${
-            activeSubTab === 'audit'
-              ? 'bg-gradient-to-r from-cyan-600 to-indigo-600 text-white shadow-[0_0_20px_rgba(34,211,238,0.4)] border border-cyan-400/80'
-              : isLight
-              ? 'text-slate-700 hover:text-cyan-800 hover:bg-white'
-              : 'text-slate-400 hover:text-cyan-300 hover:bg-slate-900'
-          }`}
-        >
-          <BarChart3 className={`w-4 h-4 ${activeSubTab === 'audit' ? 'text-white' : isLight ? 'text-cyan-700' : 'text-cyan-300'}`} />
-          <span>{isUrdu ? 'انتخابی گنتی و لیجر' : 'Election Tallies & Ledger'}</span>
-        </button>
+      {/* Primary Sub-Navigation — app-style segmented bar (icon over label) */}
+      <div className={`grid grid-cols-4 gap-1 p-1 rounded-2xl border ${isLight ? 'bg-slate-100 border-slate-300' : 'bg-slate-950 border-slate-800'}`}>
+        {[
+          { key: 'enrollment', icon: UserPlus, en: 'Enroll', ur: 'رجسٹریشن' },
+          { key: 'approvals', icon: UserCheck, en: 'Voters', ur: 'ووٹر لسٹ' },
+          { key: 'candidates', icon: FileText, en: 'Candidates', ur: 'امیدواران' },
+          { key: 'audit', icon: BarChart3, en: 'Tallies', ur: 'گنتی' },
+        ].map((tab) => {
+          const Icon = tab.icon;
+          const active = activeSubTab === tab.key;
+          return (
+            <button
+              key={tab.key}
+              onClick={() => {
+                cyberSound.playClick();
+                setActiveSubTab(tab.key as AdminTab);
+              }}
+              className={`min-h-[56px] px-1 py-2 rounded-xl font-black transition flex flex-col items-center justify-center gap-1 cursor-pointer ${
+                active
+                  ? 'bg-emerald-600 text-white shadow-md'
+                  : isLight
+                  ? 'text-slate-600 hover:bg-white'
+                  : 'text-slate-400 hover:bg-slate-900'
+              }`}
+            >
+              <Icon className="w-5 h-5" />
+              <span className="text-[10px] sm:text-[11px] uppercase tracking-wide leading-none">
+                {isUrdu ? tab.ur : tab.en}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {error && (
@@ -493,6 +455,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ initialSubTab = 'enrollmen
           voters={stats?.votersList || []}
           config={stats?.config || null}
           onRefresh={fetchStats}
+          onGoToEnroll={() => setActiveSubTab('enrollment')}
           onInspectEmbedding={(voter) => setInspectedVoter({ name: voter.name, embedding: voter.embedding })}
         />
       )}
