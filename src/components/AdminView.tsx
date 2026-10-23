@@ -17,6 +17,8 @@ import {
   UserPlus,
   ArrowRight,
   ShieldCheck,
+  Download,
+  Upload,
 } from 'lucide-react';
 import { BallotStats, Voter } from '../types';
 import { VectorMatrixVisualizer } from './VectorMatrixVisualizer';
@@ -27,6 +29,7 @@ import { cyberSound } from '../services/soundEffects';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { adminHeaders, setAdminPin, clearAdminPin } from '../services/adminAuth';
+import { isDeviceMode } from '../services/deviceMode';
 
 export type AdminTab = 'enrollment' | 'approvals' | 'candidates' | 'audit';
 
@@ -124,6 +127,55 @@ export const AdminView: React.FC<AdminViewProps> = ({ initialSubTab = 'enrollmen
       cyberSound.playSecurityAlarm();
       alert('Reset failed: ' + err.message);
       setResetting(false);
+    }
+  };
+
+  const handleExportBackup = async () => {
+    cyberSound.playClick();
+    try {
+      const res = await fetch('/api/admin/export', { headers: { ...adminHeaders() } });
+      if (!res.ok) throw new Error('Export failed');
+      const data = await res.json();
+      const blob = new Blob([JSON.stringify(data.backup, null, 2)], {
+        type: 'application/json',
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `facevote-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      cyberSound.playAccessGranted();
+    } catch (err: any) {
+      cyberSound.playSecurityAlarm();
+      alert('Backup failed: ' + err.message);
+    }
+  };
+
+  const handleImportBackup = async (file: File) => {
+    if (
+      !window.confirm(
+        isUrdu
+          ? 'بیک اپ بحال کرنے سے اس ڈیوائس کا موجودہ تمام ڈیٹا تبدیل ہو جائے گا۔ جاری رکھیں؟'
+          : 'Restoring a backup REPLACES all data on this device. Continue?'
+      )
+    )
+      return;
+    try {
+      const text = await file.text();
+      const backup = JSON.parse(text);
+      const res = await fetch('/api/admin/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...adminHeaders() },
+        body: JSON.stringify({ backup }),
+      });
+      if (!res.ok) throw new Error('Import failed');
+      cyberSound.playAccessGranted();
+      await fetchStats();
+      alert(isUrdu ? 'بیک اپ بحال ہو گیا۔' : 'Backup restored on this device.');
+    } catch (err: any) {
+      cyberSound.playSecurityAlarm();
+      alert('Restore failed: ' + err.message);
     }
   };
 
@@ -715,6 +767,43 @@ export const AdminView: React.FC<AdminViewProps> = ({ initialSubTab = 'enrollmen
                   <Trash2 className="w-4 h-4" />
                   <span>{isUrdu ? 'مکمل ری سیٹ (تمام ریکارڈز صاف کریں)' : 'FULL FACTORY RESET (WIPE ALL DATA)'}</span>
                 </button>
+
+                {isDeviceMode() && (
+                  <>
+                    <button
+                      onClick={handleExportBackup}
+                      className={`w-full py-3 px-4 rounded-xl border font-bold text-xs flex items-center justify-center space-x-2 cursor-pointer transition shadow-md ${
+                        isLight
+                          ? 'bg-emerald-100 hover:bg-emerald-200 text-emerald-900 border-emerald-300'
+                          : 'bg-emerald-950/70 hover:bg-emerald-900/80 text-emerald-200 border-emerald-600/70'
+                      }`}
+                    >
+                      <Download className="w-4 h-4" />
+                      <span>{isUrdu ? 'ڈیوائس ڈیٹا کا بیک اپ ڈاؤن لوڈ کریں' : 'DOWNLOAD DEVICE BACKUP (ALL DATA)'}</span>
+                    </button>
+
+                    <label
+                      className={`w-full py-3 px-4 rounded-xl border font-bold text-xs flex items-center justify-center space-x-2 cursor-pointer transition shadow-md ${
+                        isLight
+                          ? 'bg-blue-100 hover:bg-blue-200 text-blue-900 border-blue-300'
+                          : 'bg-blue-950/70 hover:bg-blue-900/80 text-blue-200 border-blue-600/70'
+                      }`}
+                    >
+                      <Upload className="w-4 h-4" />
+                      <span>{isUrdu ? 'بیک اپ فائل سے بحال کریں' : 'RESTORE FROM BACKUP FILE'}</span>
+                      <input
+                        type="file"
+                        accept="application/json,.json"
+                        className="hidden"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) handleImportBackup(f);
+                          e.target.value = '';
+                        }}
+                      />
+                    </label>
+                  </>
+                )}
               </div>
             </div>
           </div>
