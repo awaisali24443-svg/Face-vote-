@@ -15,6 +15,7 @@ import { getLocalizedCandidateName } from '../services/urduCandidateHelper';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { offlineStorage } from '../services/offlineStorage';
+import { isDeviceMode } from '../services/deviceMode';
 
 interface BallotViewProps {
   voter: Voter;
@@ -102,8 +103,9 @@ export const BallotView: React.FC<BallotViewProps> = ({
     setIsSubmitting(true);
     setSubmitError(null);
 
-    // Try online submission if connected
-    if (navigator.onLine) {
+    // Submit via the API — in Device Mode the API is on this device,
+    // so casting works with no internet at all.
+    if (navigator.onLine || isDeviceMode()) {
       try {
         const response = await fetch('/api/ballots/cast', {
           method: 'POST',

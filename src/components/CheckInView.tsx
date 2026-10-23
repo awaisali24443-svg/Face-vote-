@@ -27,6 +27,7 @@ import { cyberSound } from '../services/soundEffects';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { offlineStorage } from '../services/offlineStorage';
+import { isDeviceMode } from '../services/deviceMode';
 
 interface CheckInViewProps {
   onProceedToBallot: (voter: Voter, ballotToken?: string | null) => void;
@@ -229,8 +230,9 @@ export const CheckInView: React.FC<CheckInViewProps> = ({
 
       const probeEmbedding = descriptorResult.embedding;
 
-      // Try server matching first if online
-      if (navigator.onLine) {
+      // Match via the API first — in Device Mode the API is on this
+      // device, so this also works with no internet and issues the token.
+      if (navigator.onLine || isDeviceMode()) {
         try {
           const response = await fetch('/api/voters/match', {
             method: 'POST',
