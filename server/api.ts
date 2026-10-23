@@ -178,7 +178,7 @@ router.get('/candidates', async (_req: Request, res: Response) => {
 
 router.post('/admin/candidates', async (req: Request, res: Response) => {
   try {
-    const { id, name, party, tagline, sign_name, sign_icon, photo_url, display_order } = req.body;
+    const { id, name, party, tagline, sign_name, sign_icon, photo_url, display_order, education, profession, age, hometown, experience } = req.body;
 
     if (!name || typeof name !== 'string' || !name.trim()) {
       res.status(400).json({ error: 'Candidate name is required' });
@@ -200,6 +200,11 @@ router.post('/admin/candidates', async (req: Request, res: Response) => {
       sign_icon: sign_icon || 'scale',
       photo_url: photo_url || '',
       display_order: Number(display_order || 0),
+      education: typeof education === 'string' && education.trim() ? education.trim() : undefined,
+      profession: typeof profession === 'string' && profession.trim() ? profession.trim() : undefined,
+      age: typeof age === 'number' && age >= 18 && age <= 120 ? age : undefined,
+      hometown: typeof hometown === 'string' && hometown.trim() ? hometown.trim() : undefined,
+      experience: typeof experience === 'string' && experience.trim() ? experience.trim() : undefined,
     });
 
     res.json({ success: true, candidate: saved });
