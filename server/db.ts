@@ -42,6 +42,12 @@ export interface CandidateRecord {
   photo_url: string;
   display_order: number;
   base_votes?: number;
+  // Optional candidate details (results/profile cards only, never the ballot paper)
+  education?: string;
+  profession?: string;
+  age?: number;
+  hometown?: string;
+  experience?: string;
 }
 
 export interface PublicCandidateResult {
@@ -57,6 +63,11 @@ export interface PublicCandidateResult {
   votes: number;
   percentage: number;
   isLeading: boolean;
+  education?: string;
+  profession?: string;
+  age?: number;
+  hometown?: string;
+  experience?: string;
 }
 
 export interface PublicElectionResults {
@@ -97,6 +108,11 @@ const DEFAULT_CANDIDATES: CandidateRecord[] = [
     photo_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
     display_order: 1,
     base_votes: 0,
+    education: 'LLB (Hons), University of the Punjab',
+    profession: 'Advocate — Barrister-at-Law',
+    age: 47,
+    hometown: 'Lahore, Punjab',
+    experience: 'Former MNA (2018–2023); chaired the Standing Committee on Law & Justice',
   },
   {
     id: 'cand-2',
@@ -108,6 +124,11 @@ const DEFAULT_CANDIDATES: CandidateRecord[] = [
     photo_url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80',
     display_order: 2,
     base_votes: 0,
+    education: 'MBA, Lahore University of Management Sciences',
+    profession: 'Industrialist / Businessman',
+    age: 55,
+    hometown: 'Lahore, Punjab',
+    experience: 'Two-time MPA; former Provincial Minister for Industries & Trade',
   },
   {
     id: 'cand-3',
@@ -119,6 +140,11 @@ const DEFAULT_CANDIDATES: CandidateRecord[] = [
     photo_url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80',
     display_order: 3,
     base_votes: 0,
+    education: 'MBBS, King Edward Medical University',
+    profession: 'Medical Doctor & Social Worker',
+    age: 44,
+    hometown: 'Multan, Punjab',
+    experience: 'Director, Fatima Zahra Welfare Hospital; former Senator',
   },
   {
     id: 'cand-4',
@@ -130,6 +156,11 @@ const DEFAULT_CANDIDATES: CandidateRecord[] = [
     photo_url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&auto=format&fit=crop&q=80',
     display_order: 4,
     base_votes: 0,
+    education: 'MA Islamic Studies, University of Karachi',
+    profession: 'Religious Scholar & Educationist',
+    age: 52,
+    hometown: 'Lahore, Punjab',
+    experience: 'Runs a network of schools and free IT training centres',
   },
   {
     id: 'cand-5',
@@ -141,6 +172,10 @@ const DEFAULT_CANDIDATES: CandidateRecord[] = [
     photo_url: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&auto=format&fit=crop&q=80',
     display_order: 5,
     base_votes: 0,
+    education: 'BS Computer Science, GCMS Shabqadar',
+    profession: 'Student & Software Developer',
+    hometown: 'Shabqadar, Khyber Pakhtunkhwa',
+    experience: 'Built the FuelRun expo demo and the WAIS Player app',
   },
 ];
 
@@ -195,7 +230,12 @@ export async function getDb(): Promise<Database> {
         sign_icon TEXT NOT NULL,
         photo_url TEXT,
         display_order INTEGER DEFAULT 0,
-        base_votes INTEGER DEFAULT 0
+        base_votes INTEGER DEFAULT 0,
+        education TEXT,
+        profession TEXT,
+        age INTEGER,
+        hometown TEXT,
+        experience TEXT
       );
 
       CREATE TABLE IF NOT EXISTS election_config (
@@ -251,6 +291,21 @@ export async function getDb(): Promise<Database> {
       dbInstance.run(`ALTER TABLE candidates ADD COLUMN base_votes INTEGER DEFAULT 0;`);
     } catch {}
     try {
+      dbInstance.run(`ALTER TABLE candidates ADD COLUMN education TEXT;`);
+    } catch {}
+    try {
+      dbInstance.run(`ALTER TABLE candidates ADD COLUMN profession TEXT;`);
+    } catch {}
+    try {
+      dbInstance.run(`ALTER TABLE candidates ADD COLUMN age INTEGER;`);
+    } catch {}
+    try {
+      dbInstance.run(`ALTER TABLE candidates ADD COLUMN hometown TEXT;`);
+    } catch {}
+    try {
+      dbInstance.run(`ALTER TABLE candidates ADD COLUMN experience TEXT;`);
+    } catch {}
+    try {
       dbInstance.run(`ALTER TABLE ballots ADD COLUMN receipt_hash TEXT;`);
     } catch {}
     try {
@@ -292,8 +347,8 @@ export async function getDb(): Promise<Database> {
       dbInstance.run(`DELETE FROM candidates;`);
       for (const cand of DEFAULT_CANDIDATES) {
         dbInstance.run(
-          `INSERT INTO candidates (id, name, party, tagline, sign_name, sign_icon, photo_url, display_order, base_votes)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO candidates (id, name, party, tagline, sign_name, sign_icon, photo_url, display_order, base_votes, education, profession, age, hometown, experience)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             cand.id,
             cand.name,
@@ -304,6 +359,11 @@ export async function getDb(): Promise<Database> {
             cand.photo_url,
             cand.display_order,
             cand.base_votes || 0,
+            cand.education || null,
+            cand.profession || null,
+            cand.age || null,
+            cand.hometown || null,
+            cand.experience || null,
           ]
         );
       }
@@ -645,15 +705,16 @@ export async function getAllVoters(statusFilter?: string): Promise<VoterRecord[]
 export async function findClosestVoter(
   probeEmbedding: number[],
   threshold = 0.78
-): Promise<{ voter: VoterRecord | null; similarity: number; distance: number; match: boolean }> {
+): Promise<{ voter: VoterRecord | null; similarity: number; secondSimilarity: number; distance: number; match: boolean }> {
   const voters = await getAllVoters();
 
   if (voters.length === 0) {
-    return { voter: null, similarity: 0, distance: 999, match: false };
+    return { voter: null, similarity: 0, secondSimilarity: 0, distance: 999, match: false };
   }
 
   let bestVoter: VoterRecord | null = null;
   let maxSimilarity = -1;
+  let secondSimilarity = -1;
   let minDistance = 999;
 
   for (let i = 0; i < voters.length; i++) {
@@ -663,17 +724,32 @@ export async function findClosestVoter(
     }
     const sim = cosineSimilarity(probeEmbedding, voter.embedding);
     if (sim > maxSimilarity) {
+      secondSimilarity = maxSimilarity;
       maxSimilarity = sim;
       minDistance = euclideanDistance(probeEmbedding, voter.embedding);
       bestVoter = voter;
+    } else if (sim > secondSimilarity) {
+      secondSimilarity = sim;
     }
   }
 
   if (bestVoter && maxSimilarity >= threshold) {
-    return { voter: bestVoter, similarity: maxSimilarity, distance: minDistance, match: true };
+    return {
+      voter: bestVoter,
+      similarity: maxSimilarity,
+      secondSimilarity: Math.max(0, secondSimilarity),
+      distance: minDistance,
+      match: true,
+    };
   }
 
-  return { voter: null, similarity: Math.max(0, maxSimilarity), distance: minDistance, match: false };
+  return {
+    voter: null,
+    similarity: Math.max(0, maxSimilarity),
+    secondSimilarity: Math.max(0, secondSimilarity),
+    distance: minDistance,
+    match: false,
+  };
 }
 
 /**
@@ -693,7 +769,18 @@ export async function matchVoterByImageOrEmbedding(
 
   // 1. If valid 128-D vector is provided, check vector similarity
   if (Array.isArray(embedding) && embedding.length === 128) {
-    return findClosestVoter(embedding, threshold);
+    const result = await findClosestVoter(embedding, threshold);
+    // Ambiguity guard: a DIFFERENT enrolled voter almost as similar as the
+    // best match means the identification cannot be trusted — refuse rather
+    // than risk issuing a ballot for the wrong person.
+    if (
+      result.match &&
+      result.secondSimilarity >= threshold &&
+      result.similarity - result.secondSimilarity < 0.03
+    ) {
+      return { voter: null, similarity: result.similarity, distance: result.distance, match: false };
+    }
+    return result;
   }
 
   // REMOVED: photo-string matching. Comparing the submitted image string with
@@ -709,7 +796,7 @@ export async function matchVoterByImageOrEmbedding(
 export async function getCandidates(): Promise<CandidateRecord[]> {
   const db = await getDb();
   const res = db.exec(
-    `SELECT id, name, party, tagline, sign_name, sign_icon, photo_url, display_order, base_votes FROM candidates ORDER BY display_order ASC`
+    `SELECT id, name, party, tagline, sign_name, sign_icon, photo_url, display_order, base_votes, education, profession, age, hometown, experience FROM candidates ORDER BY display_order ASC`
   );
   if (!res.length || !res[0].values) return [];
 
@@ -723,6 +810,11 @@ export async function getCandidates(): Promise<CandidateRecord[]> {
     photo_url: (row[6] as string) || '',
     display_order: Number(row[7] || 0),
     base_votes: Number(row[8] || 0),
+    education: (row[9] as string) || undefined,
+    profession: (row[10] as string) || undefined,
+    age: row[11] != null ? Number(row[11]) : undefined,
+    hometown: (row[12] as string) || undefined,
+    experience: (row[13] as string) || undefined,
   }));
 }
 
@@ -735,8 +827,8 @@ export async function saveCandidate(candidate: CandidateRecord): Promise<Candida
   }
 
   db.run(
-    `INSERT OR REPLACE INTO candidates (id, name, party, tagline, sign_name, sign_icon, photo_url, display_order)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT OR REPLACE INTO candidates (id, name, party, tagline, sign_name, sign_icon, photo_url, display_order, education, profession, age, hometown, experience)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       candidate.id,
       candidate.name.trim(),
@@ -746,6 +838,11 @@ export async function saveCandidate(candidate: CandidateRecord): Promise<Candida
       candidate.sign_icon.trim(),
       candidate.photo_url || '',
       candidate.display_order || 0,
+      candidate.education?.trim() || null,
+      candidate.profession?.trim() || null,
+      candidate.age || null,
+      candidate.hometown?.trim() || null,
+      candidate.experience?.trim() || null,
     ]
   );
 
@@ -1020,6 +1117,11 @@ export async function getPublicResults(): Promise<PublicElectionResults> {
       votes,
       percentage,
       isLeading: votes === maxVotes && votes > 0,
+      education: cand.education,
+      profession: cand.profession,
+      age: cand.age,
+      hometown: cand.hometown,
+      experience: cand.experience,
     };
   });
 
