@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 import {
   detectFastLandmarks,
-  extractFaceDescriptor,
+  extractAveragedFaceDescriptor,
   captureSnapshot,
   extractDescriptorFromImageSource,
   FullFaceValidation,
@@ -333,8 +333,9 @@ export const EnrollmentView: React.FC<EnrollmentViewProps> = ({ onGoToCheckIn })
         return;
       }
 
-      // 2. Extract high-precision 128-d face descriptor with full-face enforcement
-      const descriptorResult = await extractFaceDescriptor(videoRef.current, true);
+      // 2. Extract a high-precision 128-d descriptor (3 frames averaged,
+      // full-face enforced) — the stored signature every later match uses.
+      const descriptorResult = await extractAveragedFaceDescriptor(videoRef.current, 3, true);
 
       if (!descriptorResult || !descriptorResult.embedding || descriptorResult.embedding.length !== 128) {
         setErrorMessage('Biometric registration rejected: Entire face (chin to forehead) must be clearly visible.');

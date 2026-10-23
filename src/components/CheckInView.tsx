@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import {
   detectFastLandmarks,
-  extractFaceDescriptor,
+  extractAveragedFaceDescriptor,
   FullFaceValidation,
   extractMotionSnapshot,
   evaluateMicroMotion,
@@ -222,7 +222,9 @@ export const CheckInView: React.FC<CheckInViewProps> = ({
     setStatus('matching');
 
     try {
-      const descriptorResult = await extractFaceDescriptor(videoRef.current);
+      // Multi-frame averaged descriptor: ~0.5s of samples averaged together
+      // is far more accurate than any single frame.
+      const descriptorResult = await extractAveragedFaceDescriptor(videoRef.current, 3);
       if (!descriptorResult || !descriptorResult.embedding) {
         setStatus('not_registered');
         return;

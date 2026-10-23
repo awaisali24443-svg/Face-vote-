@@ -122,20 +122,22 @@ export async function loadFaceApiModels(): Promise<boolean> {
 
 function initOptions() {
   if (!window.faceapi) return;
-  // High-sensitivity 320 input size detects faces reliably at normal sitting distances
+  // Fast detector for the live tracking/liveness loop (runs many times a second)
   tinyOptionsFast = new window.faceapi.TinyFaceDetectorOptions({
     inputSize: 320,
     scoreThreshold: 0.15,
   });
-  // Accurate detector for descriptor enrollment and matching
+  // Accurate detector for the ONE-SHOT descriptor pass (enrollment + check-in):
+  // 512px input gives a tighter face box and better landmarks, which makes the
+  // 128-D descriptor noticeably more consistent between enrollment and voting.
   tinyOptionsAccurate = new window.faceapi.TinyFaceDetectorOptions({
-    inputSize: 320,
-    scoreThreshold: 0.20,
+    inputSize: 512,
+    scoreThreshold: 0.25,
   });
-  // Fallback detector with higher resolution for dim lighting or distant users
+  // Last-resort detector for dim lighting or distant faces: highest resolution.
   tinyOptionsFallback = new window.faceapi.TinyFaceDetectorOptions({
-    inputSize: 416,
-    scoreThreshold: 0.10,
+    inputSize: 608,
+    scoreThreshold: 0.08,
   });
 }
 
@@ -400,6 +402,67 @@ export async function detectFastLandmarks(videoEl: HTMLVideoElement): Promise<Fa
 }
 
 /**
+ * Accuracy refinement: when the detected face is small in the frame, crop
+ * around it (with margin), upscale the crop, and re-extract the descriptor
+ * from the crop. Descriptors computed from a well-filled frame are far more
+ * consistent than ones from a small distant face. The original detection's
+ * box/landmarks are kept (they are in source coordinates); only the
+ * descriptor is upgraded.
+ */
+async function refineDetectionWithCrop(
+  sourceEl: HTMLVideoElement | HTMLImageElement | HTMLCanvasElement,
+  detection: any
+): Promise<any> {
+  try {
+    const faceapi = window.faceapi;
+    const srcW =
+      (sourceEl as HTMLVideoElement).videoWidth ||
+      (sourceEl as HTMLImageElement).naturalWidth ||
+      (sourceEl as any).width ||
+      0;
+    const srcH =
+      (sourceEl as HTMLVideoElement).videoHeight ||
+      (sourceEl as HTMLImageElement).naturalHeight ||
+      (sourceEl as any).height ||
+      0;
+    const box = detection?.detection?.box;
+    if (!srcW || !srcH || !box) return detection;
+    if (box.width >= srcW * 0.45) return detection; // face already fills the frame
+
+    const margin = box.width * 0.45;
+    const x = Math.max(0, box.x - margin);
+    const y = Math.max(0, box.y - margin);
+    const w = Math.min(srcW - x, box.width + margin * 2);
+    const h = Math.min(srcH - y, box.height + margin * 2);
+    if (w < 40 || h < 40) return detection;
+
+    const canvas = document.createElement('canvas');
+    const scale = Math.max(1, 320 / w);
+    canvas.width = Math.round(w * scale);
+    canvas.height = Math.round(h * scale);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return detection;
+    ctx.drawImage(sourceEl as any, x, y, w, h, 0, 0, canvas.width, canvas.height);
+
+    const refined = await faceapi
+      .detectSingleFace(canvas, tinyOptionsAccurate)
+      .withFaceLandmarks()
+      .withFaceDescriptor();
+
+    if (refined && refined.descriptor) {
+      return {
+        descriptor: refined.descriptor,
+        landmarks: detection.landmarks,
+        detection: detection.detection,
+      };
+    }
+    return detection;
+  } catch {
+    return detection;
+  }
+}
+
+/**
  * Extracts a high-precision 128-d face descriptor for matching or enrollment.
  * Only called ONCE when a valid face is confirmed or when liveness completes.
  * Refuses extraction if only a partial face or just eyes are in the frame.
@@ -430,6 +493,8 @@ export async function extractFaceDescriptor(
     return null;
   }
 
+  detection = await refineDetectionWithCrop(videoEl, detection);
+
   const box = {
     x: detection.detection.box.x,
     y: detection.detection.box.y,
@@ -450,6 +515,43 @@ export async function extractFaceDescriptor(
     box,
     fullFaceValidation,
   };
+}
+
+/**
+ * Multi-frame averaged descriptor: samples the live camera a few times over
+ * about half a second and averages the 128-D descriptors. A single frame is
+ * noisy (lighting, micro-movement, compression); the average sits much
+ * closer to the person's true descriptor, which means fewer false rejects
+ * for genuine voters and fewer false accepts for strangers.
+ */
+export async function extractAveragedFaceDescriptor(
+  videoEl: HTMLVideoElement | HTMLImageElement | HTMLCanvasElement,
+  samples = 3,
+  requireStrictFullFace = false,
+  gapMs = 160
+): Promise<{ embedding: number[]; box: any; samplesUsed: number } | null> {
+  const embeddings: number[][] = [];
+  let lastBox: any = null;
+
+  for (let attempt = 0; attempt < samples + 2 && embeddings.length < samples; attempt++) {
+    const result = await extractFaceDescriptor(videoEl, requireStrictFullFace);
+    if (result && Array.isArray(result.embedding) && result.embedding.length === 128) {
+      embeddings.push(result.embedding);
+      lastBox = result.box;
+    }
+    if (embeddings.length < samples) {
+      await new Promise((r) => setTimeout(r, gapMs));
+    }
+  }
+
+  if (embeddings.length === 0) return null;
+
+  const mean = new Array<number>(128).fill(0);
+  for (const emb of embeddings) {
+    for (let j = 0; j < 128; j++) mean[j] += emb[j] / embeddings.length;
+  }
+
+  return { embedding: mean, box: lastBox, samplesUsed: embeddings.length };
 }
 
 /**
@@ -552,6 +654,10 @@ export async function extractDescriptorFromImageSource(
               .withFaceLandmarks()
               .withFaceDescriptor();
           } catch {}
+        }
+
+        if (detection && detection.descriptor) {
+          detection = await refineDetectionWithCrop(img, detection);
         }
 
         // Draw onto a canvas to create a clean normalized base64 photo
